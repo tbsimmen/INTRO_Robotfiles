@@ -20,8 +20,8 @@
 	#include <stddef.h>   /* for NULL */
 
 	/* There can be two platforms: FRDM or ROBOT:*/
-	#define PL_IS_FRDM 1 //(defined(PL_BOARD_IS_FRDM)) 	/*!< Macro is defined through compiler option for the FRDM board */
-	#define PL_IS_ROBO 0 // (defined(PL_BOARD_IS_ROBO))  	/*!< Macro is defined through compiler option for the Robot board */ /*<- sog. 'Line Continuation')*/
+	#define PL_IS_FRDM  (defined(PL_BOARD_IS_FRDM)) 	/*!< Macro is defined through compiler option for the FRDM board */
+	#define PL_IS_ROBO  (defined(PL_BOARD_IS_ROBO))  	/*!< Macro is defined through compiler option for the Robot board */ /*<- sog. 'Line Continuation')*/
 
 
 	// WHAT HARDWARE IS AVALIABLE?

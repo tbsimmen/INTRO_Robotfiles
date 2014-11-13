@@ -3,8 +3,8 @@
   <Header>
     <Name>Robot</Name>
     <SavedBy>tbsimmen</SavedBy>
-    <ModificationStamp>41</ModificationStamp>
-    <Date>2014-11-12</Date>
+    <ModificationStamp>43</ModificationStamp>
+    <Date>2014-11-13</Date>
     <IDE>Eclipse IDE</IDE>
     <PEversion>1.10.0.RT6_b1428-0121</PEversion>
   </Header>
@@ -20020,7 +20020,7 @@
             </ItemState>
             <ItemState>
               <ItemSymbol>DividerInputFreq</ItemSymbol>
-              <Value>unknown</Value>
+              <Value>120 MHz</Value>
             </ItemState>
             <ItemState>
               <ItemSymbol>DividerClockFraction</ItemSymbol>
@@ -20050,7 +20050,7 @@
             </ItemState>
             <ItemState>
               <ItemSymbol>ModuleClockFreq</ItemSymbol>
-              <Value>unknown</Value>
+              <Value>48 MHz</Value>
             </ItemState>
             <ItemState>
               <ItemSymbol>PullUpDownGrp</ItemSymbol>
