@@ -28,7 +28,7 @@ static portTASK_FUNCTION(vSlaveTask, pvParameters) {
   for(;;) {
     if (sem != NULL) {
       if (FRTOS1_xSemaphoreTake(sem, portMAX_DELAY)==pdTRUE) {
-        LED1_Neg();
+        LED3_Neg();
       }
     }
   }

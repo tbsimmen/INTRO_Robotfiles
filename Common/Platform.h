@@ -61,7 +61,7 @@
 	  /*!< Set to 1 if using shell queues, 0 otherwise */
 	#define PL_HAS_SEMAPHORE      (1)
 	  /*!< Set to 1 if using semaphore labs, 0 otherwise */
-	#define PL_HAS_LINE_SENSOR    (0 && PL_IS_ROBO)
+	#define PL_HAS_LINE_SENSOR    (0)//(1 && PL_IS_ROBO)
 	  /*!< Set to 1 if using line sensor, 0 otherwise */
 	#define PL_HAS_REFLECTANCE    (1 && PL_HAS_LINE_SENSOR)
 	  /*!< Set to 1 if using reflectance sensor array, 0 otherwise */

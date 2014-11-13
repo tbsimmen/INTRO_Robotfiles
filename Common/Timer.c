@@ -26,11 +26,11 @@ void TMR_OnInterrupt(void) {
 
   cntr++;
   if (cntr==(1000/TMR_TICK_MS)) {
-#if 1 /* setting an event */
-    EVNT_SetEvent(EVNT_BLINK_LED);
-#else /* toggling directly the LED */
-    LED1_Neg();
-#endif
+		#if 1 /* setting an event */
+	  	  EVNT_SetEvent(EVNT_BLINK_LED);
+		#else /* toggling directly the LED */
+	  	  	  LED3_Neg();
+		#endif
     cntr = 0;
   }
 #if PL_HAS_TRIGGER

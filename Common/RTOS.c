@@ -25,23 +25,11 @@ static portTASK_FUNCTION(T1, pvParameters) {
 
 static portTASK_FUNCTION(LEDBLINK, pvParameters) {
   for(;;) {
-    LED1_Neg();
+    LED2_Neg();
     vTaskDelay(1000/portTICK_RATE_MS);
   }
 }
 
-
-
-static portTASK_FUNCTION(APP_Loop,pvParameters){
-	for(;;){
-#if PL_HAS_EVENTS
-		EVNT_HandleEvent(APP_EventHandler);
-#endif
-		KEY_Scan();
-
-		 vTaskDelay(100/portTICK_RATE_MS);
-	}
-}
 
 
 void RTOS_Run(void) {
@@ -51,17 +39,14 @@ void RTOS_Run(void) {
 void RTOS_Init(void) {
   /*! \todo Add tasks here */
 
-	 if (FRTOS1_xTaskCreate(APP_Loop, (signed portCHAR *)"App_Loop", configMINIMAL_STACK_SIZE, NULL,1, NULL) != pdPASS) {
-		    for(;;){} /* error */
-		  }
 
-	  if (FRTOS1_xTaskCreate(LEDBLINK, (signed portCHAR *)"LEDBLINK", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
-	    for(;;){} /* error */
+	 // if (FRTOS1_xTaskCreate(LEDBLINK, (signed portCHAR *)"LEDBLINK", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
+	//	  for(;;){} /* error */
+	  //}
+
+	  if (FRTOS1_xTaskCreate(T1, (signed portCHAR *)"T1", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
+		  for(;;){} /* error */
 	  }
-
-  if (FRTOS1_xTaskCreate(T1, (signed portCHAR *)"T1", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
-    for(;;){} /* error */
-  }
 
 int i = 0;
 
