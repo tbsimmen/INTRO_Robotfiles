@@ -1,12 +1,10 @@
-/*
- * Shell.c
+/**
+ * \file
+ * \brief Shell and console interface implementation.
+ * \author Erich Styger
  *
- *  Created on: 30.10.2014
- *      Author: tbsimmen
  * This module implements the front to the console/shell functionality.
  */
-
-
 
 #include "Platform.h"
 #if PL_HAS_SHELL
@@ -20,12 +18,75 @@
 #if PL_HAS_BLUETOOTH
   #include "BT1.h"
 #endif
+#if PL_HAS_SHELL_QUEUE
+  #include "ShellQueue.h"
+#endif
+#if PL_HAS_REFLECTANCE
+  #include "Reflectance.h"
+#endif
+#if PL_HAS_MOTOR
+  #include "Motor.h"
+#endif
+#if PL_HAS_MPC4728
+  #include "MPC4728.h"
+#endif
+#if PL_HAS_QUAD_CALIBRATION
+  #include "QuadCalib.h"
+#endif
+#if PL_HAS_QUADRATURE
+  #include "Q4CLeft.h"
+  #include "Q4CRight.h"
+#endif
+
+/* forward declaration */
+static uint8_t SHELL_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOType *io);
+
+static const CLS1_ParseCommandCallback CmdParserTable[] =
+{
+  CLS1_ParseCommand, /* Processor Expert Shell component, is first in list */
+  SHELL_ParseCommand, /* our own module parser */
+#if FRTOS1_PARSE_COMMAND_ENABLED
+  FRTOS1_ParseCommand, /* FreeRTOS shell parser */
+#endif
+#if PL_HAS_BLUETOOTH
+#if BT1_PARSE_COMMAND_ENABLED
+  BT1_ParseCommand,
+#endif
+#endif
+#if PL_HAS_REFLECTANCE
+  #if REF_PARSE_COMMAND_ENABLED
+  REF_ParseCommand,
+  #endif
+#endif
+#if PL_HAS_MOTOR
+  MOT_ParseCommand,
+#endif
+#if PL_HAS_MPC4728
+  MPC4728_ParseCommand,
+#endif
+#if PL_HAS_QUAD_CALIBRATION
+  QUADCALIB_ParseCommand,
+#endif
+#if PL_HAS_QUADRATURE
+#if Q4CLeft_PARSE_COMMAND_ENABLED
+  Q4CLeft_ParseCommand,
+#endif
+#if Q4CRight_PARSE_COMMAND_ENABLED
+  Q4CRight_ParseCommand,
+#endif
+#endif
+  NULL /* Sentinel */
+};
 
 static uint32_t SHELL_val; /* used as demo value for shell */
 
 void SHELL_SendString(unsigned char *msg) {
-  /*! \todo Replace this with message queues */
+#if PL_HAS_SHELL_QUEUE
+  /*! \todo Implement function using queues */
+  SQUEUE_SendString(msg);
+#else
   CLS1_SendStr(msg, CLS1_GetStdio()->stdOut);
+#endif
 }
 
 /*!
@@ -70,25 +131,12 @@ static uint8_t SHELL_ParseCommand(const unsigned char *cmd, bool *handled, const
     if (UTIL1_xatoi(&p, &val)==ERR_OK) {
       SHELL_val = val;
       *handled = TRUE;
+    } else {
+      return ERR_FAILED; /* wrong format of command? */
     }
   }
   return ERR_OK;
 }
-
-static const CLS1_ParseCommandCallback CmdParserTable[] =
-{
-  CLS1_ParseCommand, /* Processor Expert Shell component, is first in list */
-  SHELL_ParseCommand, /* our own module parser */
-#if FRTOS1_PARSE_COMMAND_ENABLED
-  FRTOS1_ParseCommand, /* FreeRTOS shell parser */
-#endif
-#if PL_HAS_BLUETOOTH
-#if BT1_PARSE_COMMAND_ENABLED
-  BT1_ParseCommand,
-#endif
-#endif
-  NULL /* Sentinel */
-};
 
 #if PL_HAS_BLUETOOTH
 /* Bluetooth stdio */
@@ -133,9 +181,9 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #endif
   static unsigned char localConsole_buf[48];
 #if CLS1_DEFAULT_SERIAL
-  CLS1_ConstStdIOTypePtr ioLocal = CLS1_GetStdio();
+  CLS1_ConstStdIOTypePtr ioLocal = CLS1_GetStdio();  
 #endif
-
+  
   (void)pvParameters; /* not used */
 #if PL_HAS_USB_CDC
   cdc_buf[0] = '\0';
@@ -157,12 +205,25 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #if PL_HAS_BLUETOOTH
     (void)CLS1_ReadAndParseWithCommandTable(bluetooth_buf, sizeof(bluetooth_buf), &BT_stdio, CmdParserTable);
 #endif
+#if PL_HAS_SHELL_QUEUE
+    {
+      /*! \todo Handle shell queue */
+      unsigned char ch;
+
+      while((ch=SQUEUE_ReceiveChar()) && ch!='\0') {
+        ioLocal->stdOut(ch);
+#if PL_HAS_BLUETOOTH
+        BT_stdio.stdOut(ch); /* copy on Bluetooth */
+#endif
+      }
+    }
+#endif
     FRTOS1_vTaskDelay(50/portTICK_RATE_MS);
   } /* for */
 }
 
 void SHELL_Init(void) {
-  CLS1_Init();
+  //CLS1_Init(); /* this is done in PE_Low_Level_init()! */
 #if !CLS1_DEFAULT_SERIAL && PL_HAS_BLUETOOTH
   (void)CLS1_SetStdio(&BT_stdio); /* use the Bluetooth stdio as default */
 #endif

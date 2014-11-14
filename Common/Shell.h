@@ -1,9 +1,8 @@
-/*
- * Shell.h
+/**
+ * \file
+ * \brief Shell (command line) interface.
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 30.10.2014
- *      Author: tbsimmen
-
  * This module implements a command line interface to the application.
  */
 
@@ -21,15 +20,5 @@ void SHELL_Init(void);
 
 /*! \brief Shell driver de-initialization */
 void SHELL_Deinit(void);
-
-#endif /* SHELL_H_ */
-
-
-#ifndef SHELL_H_
-#define SHELL_H_
-
-
-
-
 
 #endif /* SHELL_H_ */

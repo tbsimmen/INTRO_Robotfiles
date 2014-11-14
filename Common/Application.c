@@ -35,6 +35,9 @@
   #include "RTOS.h"
   #include "FRTOS1.h"
 #endif
+#if PL_HAS_MOTOR
+  #include "Motor.h"
+#endif
 
 static uint8_t lastKeyPressed;
 
@@ -185,6 +188,20 @@ static void APP_Loop(void) {
 
 void APP_Start(void) {
   PL_Init(); /* platform initialization */
+
+	LED1_On();
+	int32_t val;
+			val=10;
+
+	 //MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT) , (MOT_SpeedPercent)val);
+	 //MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT) , (MOT_SpeedPercent)val);
+
+
+
+#if PL_HAS_BUZZER
+	 BUZ_Beep(1000, 1000);
+#endif
+
 
   //TEST_Test();
   EVNT_SetEvent(EVNT_INIT); /* set initial event */

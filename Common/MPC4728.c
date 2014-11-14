@@ -29,7 +29,7 @@
 #if PL_IS_INTRO_ZUMO_K22_V2
   #define MPC4728_I2C_ADDRESS 0x61 /* default address of device (4728A1) */
 #else
-  #define MPC4728_I2C_ADDRESS 0x60 /* default address of device (4728UN) */
+  #define MPC4728_I2C_ADDRESS 0x61 /* default address of device (4728UN) */
 #endif
 
 bool MPC4728_IsBusy(void) {

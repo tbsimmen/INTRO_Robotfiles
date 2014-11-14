@@ -66,7 +66,13 @@
 	#define PL_HAS_REFLECTANCE    (1 && PL_HAS_LINE_SENSOR)
 	  /*!< Set to 1 if using reflectance sensor array, 0 otherwise */
 	#define PL_HAS_RTOS_TRACE     (0)
-
+	/*!< TBD */
+	#define PL_HAS_MOTOR     (1 && PL_IS_ROBO)
+  	  /*!< Set to 1 if PL has a motor, 0 otherwise */
+	#define PL_HAS_QUAD_CALIBRATION     (1 && PL_IS_ROBO)
+  	  /*!< Set to 1 if PL has a motor AND QUAD, 0 otherwise */
+	#define PL_HAS_MPC4728     (1 && PL_IS_ROBO)
+  	  /*!< Set to 1 if PL has a motor AND QUAD, 0 otherwise */
 
 
 	/* if keys are using interrupts or are polled */

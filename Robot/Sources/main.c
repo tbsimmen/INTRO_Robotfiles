@@ -36,9 +36,6 @@
 #include "BitIoLdd1.h"
 #include "LedBit2.h"
 #include "BitIoLdd4.h"
-#include "TI1.h"
-#include "TimerIntLdd1.h"
-#include "TU1.h"
 #include "SW1.h"
 #include "ExtIntLdd1.h"
 #include "BUZ1.h"
@@ -55,12 +52,60 @@
 #include "BT1.h"
 #include "Serial1.h"
 #include "ASerialLdd1.h"
+#include "LED_IR.h"
+#include "LEDpin1.h"
+#include "BitIoLdd5.h"
+#include "RefCnt.h"
+#include "IR1.h"
+#include "BitIoLdd6.h"
+#include "IR2.h"
+#include "BitIoLdd7.h"
+#include "IR3.h"
+#include "BitIoLdd8.h"
+#include "IR4.h"
+#include "BitIoLdd9.h"
+#include "IR5.h"
+#include "BitIoLdd10.h"
+#include "IR6.h"
+#include "BitIoLdd11.h"
+#include "MOTTU.h"
+#include "DIRL.h"
+#include "BitIoLdd6.h"
+#include "BitIoLdd12.h"
+#include "PWMR.h"
+#include "PwmLdd1.h"
+#include "DIRR.h"
+#include "BitIoLdd13.h"
+#include "PWML.h"
+#include "PwmLdd2.h"
+#include "IFsh1.h"
+#include "IntFlashLdd1.h"
+#include "TU_MPC4728.h"
+#include "MPC4728_LDAC.h"
+#include "BitIoLdd14.h"
+#include "MPC4728_RDY.h"
+#include "BitIoLdd15.h"
+#include "I2C1.h"
+#include "GI2C1.h"
+#include "TMOUT1.h"
+#include "Q4CLeft.h"
+#include "C11.h"
+#include "BitIoLdd16.h"
+#include "C21.h"
+#include "BitIoLdd17.h"
+#include "Q4CRight.h"
+#include "C12.h"
+#include "BitIoLdd19.h"
+#include "C23.h"
+#include "BitIoLdd20.h"
 #include "LED.h"
 /* Including shared modules, which are used for whole project */
 #include "PE_Types.h"
 #include "PE_Error.h"
 #include "PE_Const.h"
 #include "IO_Map.h"
+#include "Motor.h"
+#include "Application.h"
 /* User includes (#include below this line is not maintained by Processor Expert) */
 
 /*lint -save  -e970 Disable MISRA rule (6.3) checking. */
@@ -74,18 +119,7 @@ int main(void)
 	/*** End of Processor Expert internal initialization.                    ***/
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+	APP_Start();
 
 
 
