@@ -199,7 +199,7 @@ void APP_Start(void) {
 
 
 #if PL_HAS_BUZZER
-	 BUZ_Beep(1000, 1000);
+	 //BUZ_Beep(1000, 1000);
 #endif
 
 

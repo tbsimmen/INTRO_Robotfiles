@@ -30,7 +30,7 @@ void TMR_OnInterrupt(void) {
 		#if 1 /* setting an event */
 	  	  EVNT_SetEvent(EVNT_BLINK_LED);
 		#else /* toggling directly the LED */
-	  	  	  LED3_Neg();
+	  	  	  LED1_Neg();
 		#endif
     cntr = 0;
   }

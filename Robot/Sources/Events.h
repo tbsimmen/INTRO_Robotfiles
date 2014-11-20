@@ -46,6 +46,7 @@
 #include "BUZ1.h"
 #include "BitIoLdd3.h"
 #include "FRTOS1.h"
+#include "RTOSTRC1.h"
 #include "RTOSCNTRLDD1.h"
 #include "UTIL1.h"
 #include "CLS1.h"
@@ -55,8 +56,8 @@
 #include "Tx1.h"
 #include "Rx1.h"
 #include "BT1.h"
-#include "Serial1.h"
-#include "ASerialLdd1.h"
+#include "Serial2.h"
+#include "ASerialLdd2.h"
 #include "LED_IR.h"
 #include "LEDpin1.h"
 #include "BitIoLdd5.h"
@@ -103,6 +104,9 @@
 #include "BitIoLdd19.h"
 #include "C23.h"
 #include "BitIoLdd20.h"
+#include "QuadInt.h"
+#include "TimerIntLdd2.h"
+#include "TU_QuadInt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -219,6 +223,36 @@ void GI2C1_OnReleaseBus(void);
 **     Description :
 **         User event which will be called after accessing the I2C bus.
 **         Useful for ending a critical section.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+
+/*
+** ===================================================================
+**     Event       :  QuadInt_OnInterrupt (module Events)
+**
+**     Component   :  QuadInt [TimerInt]
+**     Description :
+**         When a timer interrupt occurs this event is called (only
+**         when the component is enabled - <Enable> and the events are
+**         enabled - <EnableEvent>). This event is enabled only if a
+**         <interrupt service/event> is enabled.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void QuadInt_OnInterrupt(void);
+
+void RTOSTRC1_OnTraceWrap(void);
+/*
+** ===================================================================
+**     Event       :  RTOSTRC1_OnTraceWrap (module Events)
+**
+**     Component   :  RTOSTRC1 [PercepioTrace]
+**     Description :
+**         Called for trace ring buffer wrap around. This gives the
+**         application a chance to dump the trace buffer.
 **     Parameters  : None
 **     Returns     : Nothing
 ** ===================================================================

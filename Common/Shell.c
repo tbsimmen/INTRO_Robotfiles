@@ -37,6 +37,9 @@
   #include "Q4CLeft.h"
   #include "Q4CRight.h"
 #endif
+#if PL_HAS_BUZZER
+  #include "Buzzer.h"
+#endif
 
 /* forward declaration */
 static uint8_t SHELL_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOType *io);
@@ -74,8 +77,11 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 #if Q4CRight_PARSE_COMMAND_ENABLED
   Q4CRight_ParseCommand,
 #endif
+#if PL_HAS_BUZZER
+  BUZ_ParseCommand,
 #endif
   NULL /* Sentinel */
+#endif
 };
 
 static uint32_t SHELL_val; /* used as demo value for shell */

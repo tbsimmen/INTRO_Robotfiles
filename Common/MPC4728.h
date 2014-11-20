@@ -25,6 +25,7 @@ uint8_t MPC4728_FastWriteDAC(uint8_t channel, uint16_t val);
  */
 uint8_t MPC4728_FastWriteAllDAC(uint16_t dac[4], size_t dacSize, uint8_t pd[4], size_t pdSize);
 
+
 /* writes DAC register and changes EEPROM */
 uint8_t MPC4728_WriteDACandEE(uint8_t channel, uint16_t val);
 

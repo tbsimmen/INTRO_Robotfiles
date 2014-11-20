@@ -52,6 +52,8 @@ static GetChannelBitFct ChannelFct[NOF_SIGNALS] =
     ChDBit
 };
 
+
+
 static uint8_t Measure(uint8_t channel, QuadTime_t *timing) {
   uint32_t timeout;
   #define TIMEOUT_VAL 0xffff /* just some waiting time */
@@ -112,7 +114,7 @@ static uint8_t Measure(uint8_t channel, QuadTime_t *timing) {
 }
 
 static uint8_t Tune(const CLS1_StdIOType *io, uint8_t channel, MOT_MotorDevice *motorHandle) {
-  #define TUNE_MOTOR_PERCENT 20
+	#define TUNE_MOTOR_PERCENT 20
   uint16_t dac;
   int i;
   QuadTime_t timing;
@@ -122,6 +124,7 @@ static uint8_t Tune(const CLS1_StdIOType *io, uint8_t channel, MOT_MotorDevice *
 #if PL_HAS_DRIVE
   DRV_SetMode(DRV_MODE_NONE); /* turn off drive mode */
 #endif
+
   MOT_SetSpeedPercent(motorHandle, TUNE_MOTOR_PERCENT);
   CLS1_SendStr((uint8_t*)"Tuning channel...\r\n", io->stdOut);
   res = ERR_FAILED;
@@ -217,18 +220,22 @@ byte QUADCALIB_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_
   if (UTIL1_strcmp((char*)cmd, CLS1_CMD_HELP)==0 || UTIL1_strcmp((char*)cmd, "quadcalib help")==0) {
     *handled = TRUE;
     return PrintHelp(io);
+
   } else if ((UTIL1_strcmp((char*)cmd, CLS1_CMD_STATUS)==0) || (UTIL1_strcmp((char*)cmd, "quadcalib status")==0)) {
     *handled = TRUE;
     return PrintStatus(io);
   } else if ((UTIL1_strcmp((char*)cmd, "quadcalib tune 0")==0)) {
     *handled = TRUE;
     return Tune(io, 0, MOT_GetMotorHandle(MOT_MOTOR_RIGHT));
+
   } else if ((UTIL1_strcmp((char*)cmd, "quadcalib tune 1")==0)) {
     *handled = TRUE;
     return Tune(io, 1, MOT_GetMotorHandle(MOT_MOTOR_RIGHT));
+
   } else if ((UTIL1_strcmp((char*)cmd, "quadcalib tune 2")==0)) {
     *handled = TRUE;
     return Tune(io, 2, MOT_GetMotorHandle(MOT_MOTOR_LEFT));
+
   } else if ((UTIL1_strcmp((char*)cmd, "quadcalib tune 3")==0)) {
     *handled = TRUE;
     return Tune(io, 3, MOT_GetMotorHandle(MOT_MOTOR_LEFT));
