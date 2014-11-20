@@ -44,6 +44,10 @@ void RTOS_Init(void) {
 	//	  for(;;){} /* error */
 	  //}
 
+	 // if (FRTOS1_xTaskCreate(LEDBLINK, (signed portCHAR *)"LEDBLINK", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
+	//		  for(;;){} /* error */
+	//	 }
+
 	  if (FRTOS1_xTaskCreate(T1, (signed portCHAR *)"T1", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
 		  for(;;){} /* error */
 	  }

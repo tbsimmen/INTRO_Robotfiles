@@ -19,7 +19,17 @@
 #if PL_HAS_TRIGGER
   #include "Trigger.h"
 #endif
+
 #include "TMOUT1.h"
+
+#if PL_HAS_MOTOR_TACHO
+  #include "Tacho.h"
+#endif
+
+#if PL_HAS_QUADRATURE
+ #include "Q4CLeft.h"
+ #include "Q4CRight.h"
+#endif
 
 void TMR_OnInterrupt(void) {
   /* this one gets called from an interrupt!!!! */
@@ -31,14 +41,27 @@ void TMR_OnInterrupt(void) {
 	  	  EVNT_SetEvent(EVNT_BLINK_LED);
 		#else /* toggling directly the LED */
 	  	  	  LED1_Neg();
+	  	  	  LED2_Neg();
 		#endif
     cntr = 0;
   }
+
 #if PL_HAS_TRIGGER
   TRG_IncTick();
 #endif
   TMOUT1_AddTick();
+
+
+  Q4CRight_Sample();
+  Q4CLeft_Sample();
+
+
+#if PL_HAS_MOTOR_TACHO
+  TACHO_Sample();
+#endif
+
 }
+
 
 void TMR_Init(void) {
   /* nothing needed right now */

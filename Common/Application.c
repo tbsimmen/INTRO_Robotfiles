@@ -67,8 +67,12 @@ static void APP_EventHandler(EVNT_Handle event) {
       EVNT_ClearEvent(EVNT_INIT);
       break;
     case EVENT_LED_HEARTBEAT:
-      LED3_Neg();
+      LED2_Neg();
       break;
+    case EVNT_BLINK_LED:
+    	LED1_Neg();
+    	LED2_Neg();
+    	break;
 #if PL_NOF_KEYS >= 1
     case EVNT_SW1_PRESSED:
       lastKeyPressed = 1;
@@ -152,6 +156,7 @@ static void AppTask(void *pvParameters) {
   for(;;) {
 #if PL_HAS_EVENTS
     EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+    EVNT_SetEvent(EVNT_BLINK_LED);
 #endif
 #if PL_HAS_KEYS && PL_NOF_KEYS>0
     KEY_Scan(); /* scan keys */
@@ -160,6 +165,7 @@ static void AppTask(void *pvParameters) {
     MEALY_Step();
 #endif
     FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+
   }
 }
 #else

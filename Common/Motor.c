@@ -54,11 +54,13 @@ void MOT_SetSpeedPercent(MOT_MotorDevice *motor, MOT_SpeedPercent percent) {
   /*! \todo See lab guide about this function */
   uint32_t val;
 
+
   if (percent>100) { /* make sure we are within 0..100 */
     percent = 100;
   } else if (percent<-100) {
     percent = -100;
   }
+
   motor->currSpeedPercent = percent; /* store value */
   if (percent<0) {
     MOT_SetDirection(motor, MOT_DIR_BACKWARD);
@@ -88,8 +90,13 @@ void MOT_ChangeSpeedPercent(MOT_MotorDevice *motor, MOT_SpeedPercent relPercent)
 }
 
 void MOT_SetDirection(MOT_MotorDevice *motor, MOT_Direction dir) {
-  /*! \todo Check if directions are working properly with your hardware */
-  if (dir==MOT_DIR_BACKWARD) {
+  /*! Check if directions are working properly with your hardware */ //DONE!
+
+	if(motor == &motorL){
+		 dir = MOT_DIR_BACKWARD;
+	  }
+
+ if (dir==MOT_DIR_BACKWARD) {
     motor->DirPutVal(0);
     if (motor->currSpeedPercent>0) {
       motor->currSpeedPercent = -motor->currSpeedPercent;

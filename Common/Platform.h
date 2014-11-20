@@ -78,8 +78,15 @@
   /*!< Set to 1 if using quadrature calibration, 0 otherwise */
 #define PL_HAS_QUADRATURE     (1 && PL_IS_ROBO)
   /*!< Set to 1 if using quadrature counters, 0 otherwise */
-
-#define PL_HAS_RTOS_TRACE     0 //(1 && PL_HAS_RTOS && configUSE_TRACE_HOOKS)
+#define PL_HAS_MOTOR_TACHO    (1 && PL_HAS_QUADRATURE)
+  /*!< Set to 1 if using speed estimation, 0 otherwise */
+#define PL_HAS_PID            (0)//(1 && PL_HAS_MOTOR_TACHO)
+  /*!< Set to 1 if using PID, 0 otherwise */
+#define PL_HAS_ULTRASONIC     (0)//(1 && PL_IS_ROBO)
+  /*!< Set to 1 if using ultrasonic sensor, 0 otherwise */
+#define PL_HAS_ACCEL          (0)
+  /*!< Set to 1 if using an accelerometer, 0 otherwise */
+#define PL_HAS_RTOS_TRACE     (0) //(1 && PL_HAS_RTOS && configUSE_TRACE_HOOKS)
   /*!< Set to 1 if Percepio trace, 0 otherwise */
 
 /* additional hardware configuration */

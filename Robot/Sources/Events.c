@@ -1,30 +1,30 @@
 /* ###################################################################
- **     Filename    : Events.c
- **     Project     : FRDM
- **     Processor   : MKL25Z128VLK4
- **     Component   : Events
- **     Version     : Driver 01.00
- **     Compiler    : GNU C Compiler
- **     Date/Time   : 2014-11-07, 16:04, # CodeGen: 0
- **     Abstract    :
- **         This is user's event module.
- **         Put your event handler code here.
- **     Settings    :
- **     Contents    :
- **         Cpu_OnNMIINT - void Cpu_OnNMIINT(void);
- **
- ** ###################################################################*/
+**     Filename    : Events.c
+**     Project     : INTRO_Robo
+**     Processor   : MK22FX512VLQ12
+**     Component   : Events
+**     Version     : Driver 01.00
+**     Compiler    : GNU C Compiler
+**     Date/Time   : 2014-09-14, 14:51, # CodeGen: 0
+**     Abstract    :
+**         This is user's event module.
+**         Put your event handler code here.
+**     Settings    :
+**     Contents    :
+**         Cpu_OnNMIINT - void Cpu_OnNMIINT(void);
+**
+** ###################################################################*/
 /*!
- ** @file Events.c
- ** @version 01.00
- ** @brief
- **         This is user's event module.
- **         Put your event handler code here.
- */
+** @file Events.c
+** @version 01.00
+** @brief
+**         This is user's event module.
+**         Put your event handler code here.
+*/
 /*!
- **  @addtogroup Events_module Events module documentation
- **  @{
- */
+**  @addtogroup Events_module Events module documentation
+**  @{
+*/
 /* MODULE Events */
 
 #include "Cpu.h"
@@ -34,23 +34,79 @@
 extern "C" {
 #endif 
 
+
 /* User includes (#include below this line is not maintained by Processor Expert) */
+#include "Platform.h"
+#if PL_HAS_TIMER
+  #include "Timer.h"
+#endif
+#if PL_HAS_EVENTS
+  #include "Event.h"
+#endif
+#if PL_HAS_KEYS
+  #include "Keys.h"
+#endif
+#if PL_HAS_ULTRASONIC
+  #include "Ultrasonic.h"
+#endif
+/*
+** ===================================================================
+**     Event       :  Cpu_OnNMIINT (module Events)
+**
+**     Component   :  Cpu [MK22FN1M0LQ12]
+*/
+/*!
+**     @brief
+**         This event is called when the Non maskable interrupt had
+**         occurred. This event is automatically enabled when the [NMI
+**         interrupt] property is set to 'Enabled'.
+*/
+/* ===================================================================*/
+void Cpu_OnNMIINT(void)
+{
+  /* Write your code here ... */
+}
 
 /*
- ** ===================================================================
- **     Event       :  Cpu_OnNMIINT (module Events)
- **
- **     Component   :  Cpu [MKL25Z128LK4]
- */
-/*!
- **     @brief
- **         This event is called when the Non maskable interrupt had
- **         occurred. This event is automatically enabled when the [NMI
- **         interrupt] property is set to 'Enabled'.
- */
-/* ===================================================================*/
-void Cpu_OnNMIINT(void) {
-	/* Write your code here ... */
+** ===================================================================
+**     Event       :  TI1_OnInterrupt (module Events)
+**
+**     Component   :  TI1 [TimerInt]
+**     Description :
+**         When a timer interrupt occurs this event is called (only
+**         when the component is enabled - <Enable> and the events are
+**         enabled - <EnableEvent>). This event is enabled only if a
+**         <interrupt service/event> is enabled.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void TI1_OnInterrupt(void)
+{
+#if PL_HAS_TIMER
+  TMR_OnInterrupt();
+#endif
+}
+
+/*
+** ===================================================================
+**     Event       :  SW1_OnInterrupt (module Events)
+**
+**     Component   :  SW1 [ExtInt]
+**     Description :
+**         This event is called when an active signal edge/level has
+**         occurred.
+**     Parameters  : None
+**     Returns     : Nothing
+** ===================================================================
+*/
+void SW1_OnInterrupt(void)
+{
+#if PL_HAS_KBI
+  if (KEY1_Get()) {
+    KEY_OnInterrupt(KEY_BTN1);
+  }
+#endif
 }
 
 /*
@@ -96,7 +152,9 @@ void FRTOS1_vApplicationStackOverflowHook(xTaskHandle pxTask, char *pcTaskName)
 void FRTOS1_vApplicationTickHook(void)
 {
   /* Called for every RTOS tick. */
-  /* Write your code here ... */
+#if PL_HAS_TIMER
+  TMR_OnInterrupt();
+#endif
 }
 
 /*
@@ -115,7 +173,6 @@ void FRTOS1_vApplicationIdleHook(void)
 {
   /* Called whenever the RTOS is idle (from the IDLE task).
      Here would be a good place to put the CPU into low power mode. */
-  /* Write your code here ... */
 }
 
 /*
@@ -140,23 +197,6 @@ void FRTOS1_vApplicationMallocFailedHook(void)
   taskDISABLE_INTERRUPTS();
   /* Write your code here ... */
   for(;;) {}
-}
-
-/*
-** ===================================================================
-**     Event       :  SW1_OnInterrupt (module Events)
-**
-**     Component   :  SW1 [ExtInt]
-**     Description :
-**         This event is called when an active signal edge/level has
-**         occurred.
-**     Parameters  : None
-**     Returns     : Nothing
-** ===================================================================
-*/
-void SW1_OnInterrupt(void)
-{
-  /* Write your code here ... */
 }
 
 /*
@@ -209,7 +249,10 @@ void GI2C1_OnReleaseBus(void)
 */
 void QuadInt_OnInterrupt(void)
 {
-  /* Write your code here ... */
+#if PL_HAS_QUADRATURE
+  Q4CLeft_Sample();
+  Q4CRight_Sample();
+#endif
 }
 
 /*
@@ -229,20 +272,76 @@ void RTOSTRC1_OnTraceWrap(void)
   /* Write your code here ... */
 }
 
+/*
+** ===================================================================
+**     Event       :  TU_US_OnCounterRestart (module Events)
+**
+**     Component   :  TU_US [TimerUnit_LDD]
+*/
+/*!
+**     @brief
+**         Called if counter overflow/underflow or counter is
+**         reinitialized by modulo or compare register matching.
+**         OnCounterRestart event and Timer unit must be enabled. See
+**         [SetEventMask] and [GetEventMask] methods. This event is
+**         available only if a [Interrupt] is enabled.
+**     @param
+**         UserDataPtr     - Pointer to the user or
+**                           RTOS specific data. The pointer passed as
+**                           the parameter of Init method.
+*/
+/* ===================================================================*/
+void TU_US_OnCounterRestart(LDD_TUserData *UserDataPtr)
+{
+#if PL_HAS_ULTRASONIC
+  US_EventEchoOverflow(UserDataPtr);
+#else
+  (void)UserDataPtr; /* unused */
+#endif
+}
+
+/*
+** ===================================================================
+**     Event       :  TU_US_OnChannel0 (module Events)
+**
+**     Component   :  TU_US [TimerUnit_LDD]
+*/
+/*!
+**     @brief
+**         Called if compare register match the counter registers or
+**         capture register has a new content. OnChannel0 event and
+**         Timer unit must be enabled. See [SetEventMask] and
+**         [GetEventMask] methods. This event is available only if a
+**         [Interrupt] is enabled.
+**     @param
+**         UserDataPtr     - Pointer to the user or
+**                           RTOS specific data. The pointer passed as
+**                           the parameter of Init method.
+*/
+/* ===================================================================*/
+void TU_US_OnChannel0(LDD_TUserData *UserDataPtr)
+{
+#if PL_HAS_ULTRASONIC
+  US_EventEchoCapture(UserDataPtr);
+#else
+  (void)UserDataPtr; /* unused */
+#endif
+}
+
 /* END Events */
 
 #ifdef __cplusplus
-} /* extern "C" */
+}  /* extern "C" */
 #endif 
 
 /*!
- ** @}
- */
+** @}
+*/
 /*
- ** ###################################################################
- **
- **     This file was created by Processor Expert 10.4 [05.10]
- **     for the Freescale Kinetis series of microcontrollers.
- **
- ** ###################################################################
- */
+** ###################################################################
+**
+**     This file was created by Processor Expert 10.4 [05.10]
+**     for the Freescale Kinetis series of microcontrollers.
+**
+** ###################################################################
+*/
