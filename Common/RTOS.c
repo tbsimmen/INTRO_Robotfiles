@@ -23,10 +23,10 @@ static portTASK_FUNCTION(T1, pvParameters) {
 }
 
 
-static portTASK_FUNCTION(LEDBLINK, pvParameters) {
+static portTASK_FUNCTION(T2, pvParameters) {
   for(;;) {
-    LED2_Neg();
-    vTaskDelay(1000/portTICK_RATE_MS);
+  //  LED2_Neg();
+//   vTaskDelay(1000/portTICK_RATE_MS);
   }
 }
 
@@ -44,9 +44,9 @@ void RTOS_Init(void) {
 	//	  for(;;){} /* error */
 	  //}
 
-	 // if (FRTOS1_xTaskCreate(LEDBLINK, (signed portCHAR *)"LEDBLINK", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
-	//		  for(;;){} /* error */
-	//	 }
+	  if (FRTOS1_xTaskCreate(T2, (signed portCHAR *)"T2", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
+			  for(;;){} /* error */
+		 }
 
 	  if (FRTOS1_xTaskCreate(T1, (signed portCHAR *)"T1", configMINIMAL_STACK_SIZE, NULL,0, NULL) != pdPASS) {
 		  for(;;){} /* error */

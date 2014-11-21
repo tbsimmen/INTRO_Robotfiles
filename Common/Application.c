@@ -71,7 +71,7 @@ static void APP_EventHandler(EVNT_Handle event) {
       break;
     case EVNT_BLINK_LED:
     	LED1_Neg();
-    	LED2_Neg();
+    	//LED2_Neg();
     	break;
 #if PL_NOF_KEYS >= 1
     case EVNT_SW1_PRESSED:
@@ -156,7 +156,7 @@ static void AppTask(void *pvParameters) {
   for(;;) {
 #if PL_HAS_EVENTS
     EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
-    EVNT_SetEvent(EVNT_BLINK_LED);
+   EVNT_SetEvent(EVNT_BLINK_LED);
 #endif
 #if PL_HAS_KEYS && PL_NOF_KEYS>0
     KEY_Scan(); /* scan keys */

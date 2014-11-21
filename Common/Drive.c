@@ -12,6 +12,7 @@
 #include "Pid.h"
 #include "Tacho.h"
 #include "Motor.h"
+#include "Led.h"
 #if PL_HAS_RTOS_TRACE
   #include "RTOSTRC1.h"
 #endif

@@ -82,6 +82,8 @@
   /*!< Set to 1 if using speed estimation, 0 otherwise */
 #define PL_HAS_PID            (1 && PL_HAS_MOTOR_TACHO)
   /*!< Set to 1 if using PID, 0 otherwise */
+#define PL_HAS_DRIVE          (1 && PL_HAS_PID)
+  /*!< Set to 1 if using PID, 0 otherwise */
 #define PL_HAS_ULTRASONIC     (0)//(1 && PL_IS_ROBO)
   /*!< Set to 1 if using ultrasonic sensor, 0 otherwise */
 #define PL_HAS_ACCEL          (0)
