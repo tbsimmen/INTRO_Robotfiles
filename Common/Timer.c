@@ -31,6 +31,10 @@
  #include "Q4CRight.h"
 #endif
 
+#if PL_HAS_PID
+ #include "Pid.h"
+#endif
+
 void TMR_OnInterrupt(void) {
   /* this one gets called from an interrupt!!!! */
   static int cntr=0;
@@ -50,10 +54,6 @@ void TMR_OnInterrupt(void) {
   TRG_IncTick();
 #endif
   TMOUT1_AddTick();
-
-
-  Q4CRight_Sample();
-  Q4CLeft_Sample();
 
 
 #if PL_HAS_MOTOR_TACHO

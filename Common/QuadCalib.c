@@ -121,11 +121,12 @@ static uint8_t Tune(const CLS1_StdIOType *io, uint8_t channel, MOT_MotorDevice *
   uint8_t buf[48];
   uint8_t res;
  
-#if PL_HAS_DRIVE
-  DRV_SetMode(DRV_MODE_NONE); /* turn off drive mode */
-#endif
+//#if PL_HAS_DRIVE
+//  DRV_SetMode(DRV_MODE_NONE); /* turn off drive mode */
+//#endif
 
-  MOT_SetSpeedPercent(motorHandle, TUNE_MOTOR_PERCENT);
+
+MOT_SetSpeedPercent(motorHandle, TUNE_MOTOR_PERCENT);
   CLS1_SendStr((uint8_t*)"Tuning channel...\r\n", io->stdOut);
   res = ERR_FAILED;
   for(i=0,dac=0;dac<=MPC4728_MAX_DAC_VAL;i++) {

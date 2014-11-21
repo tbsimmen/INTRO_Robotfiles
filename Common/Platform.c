@@ -107,9 +107,33 @@ void PL_Init(void) {
 #if PL_HAS_CONFIG_NVM
   NVMC_Init();
 #endif
+#if PL_HAS_MOTOR_TACHO
+  TACHO_Init();
+#endif
+#if PL_HAS_PID
+  PID_Init();
+#endif
+#if PL_HAS_ACCEL
+  ACCEL_Init();
+#endif
+#if PL_HAS_ULTRASONIC
+  US_Init();
+#endif
 }
 
 void PL_Deinit(void) {
+#if PL_HAS_ULTRASONIC
+  US_Deinit();
+#endif
+#if PL_HAS_ACCEL
+  ACCEL_Deinit();
+#endif
+#if PL_HAS_PID
+  PID_Deinit();
+#endif
+#if PL_HAS_MOTOR_TACHO
+  TACHO_Deinit();
+#endif
 #if PL_HAS_CONFIG_NVM
   NVMC_Deinit();
 #endif
