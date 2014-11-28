@@ -88,9 +88,9 @@
   /*!< Set to 1 if using ultrasonic sensor, 0 otherwise */
 #define PL_HAS_ACCEL          (1)
   /*!< Set to 1 if using an accelerometer, 0 otherwise */
-#define PL_HAS_RADIO          (0)
+#define PL_HAS_RADIO          (1)
   /*!< Set to 1 if using an radio transceiver, 0 otherwise */
-#define PL_HAS_REMOTE         (0) //(1 && PL_HAS_RADIO && PL_HAS_ACCEL)
+#define PL_HAS_REMOTE         (0)//(1 && PL_HAS_RADIO && PL_HAS_ACCEL)
 #define PL_APP_ACCEL_CONTROL_SENDER (0) //(PL_HAS_REMOTE && PL_IS_FRDM)
 #define PL_HAS_RTOS_TRACE     (0) //(1 && PL_HAS_RTOS && configUSE_TRACE_HOOKS)
   /*!< Set to 1 if Percepio trace, 0 otherwise */

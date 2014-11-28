@@ -82,14 +82,12 @@ static void APP_EventHandler(EVNT_Handle event) {
       LED1_Off();
       LED2_Off();
       LED3_Off();
-      EVNT_ClearEvent(EVNT_INIT);
       break;
     case EVENT_LED_HEARTBEAT:
       LED2_Neg();
       break;
     case EVNT_BLINK_LED:
     	LED1_Neg();
-    	//LED2_Neg();
     	break;
 #if PL_NOF_KEYS >= 1
     case EVNT_SW1_PRESSED:
@@ -196,17 +194,26 @@ static void AppTask(void *pvParameters) {
 		#endif
 
 
-		#if (PL_HAS_ACCEL && PL_HAS_ULTRASONIC)
+		#if (PL_HAS_ACCEL)// && PL_HAS_ULTRASONIC)
 
+		#if PL_IS_ROBO
 			if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
-				#if PL_HAS_BUZZER
-					//BUZ_Beep(800,100);
+		#else
+			if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0)) {
+		#endif
+					#if PL_HAS_BUZZER
+					BUZ_Beep(800,100);
 				#endif
 				#if PL_HAS_DRIVE
 					DRV_EnableDisable(FALSE);
 				#endif
 				#if PL_HAS_LED
-					LED2_On();
+					#if PL_IS_FRDM
+						LED3_On();
+						LED2_On();
+					#else
+						LED2_On();
+					#endif
 				#endif
 
 			}else{
@@ -214,7 +221,12 @@ static void AppTask(void *pvParameters) {
 				 	DRV_EnableDisable(TRUE);
 				#endif
 				#if PL_HAS_LED
-					LED2_Off();
+					#if PL_IS_FRDM
+						LED3_Off();
+						LED2_Off();
+					#else
+						LED2_Off();
+					#endif
 				#endif
 			}
 		#endif
@@ -263,7 +275,10 @@ void APP_Start(void) {
 	#endif
 
 	#if PL_HAS_LED
+		#if PL_IS_ROBO
 		 LED1_On();
+		#endif
+
 	#endif
 
 	EVNT_SetEvent(EVNT_INIT); /* set initial event */

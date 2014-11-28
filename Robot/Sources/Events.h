@@ -47,6 +47,7 @@
 #include "BitIoLdd3.h"
 #include "FRTOS1.h"
 #include "RTOSTRC1.h"
+#include "RTOSCNTRLDD1.h"
 #include "UTIL1.h"
 #include "CLS1.h"
 #include "USB1.h"
@@ -85,10 +86,10 @@
 #include "PwmLdd2.h"
 #include "IFsh1.h"
 #include "IntFlashLdd1.h"
-#include "TU_MPC4728.h"
-#include "MPC4728_LDAC.h"
+#include "TU_MCP4728.h"
+#include "MCP4728_LDAC.h"
 #include "BitIoLdd14.h"
-#include "MPC4728_RDY.h"
+#include "MCP4728_RDY.h"
 #include "BitIoLdd15.h"
 #include "I2C1.h"
 #include "GI2C1.h"
@@ -109,6 +110,16 @@
 #include "MMA1.h"
 #include "TU_US.h"
 #include "TRIG.h"
+#include "RNET1.h"
+#include "RF1.h"
+#include "CE1.h"
+#include "BitIoLdd22.h"
+#include "CSN1.h"
+#include "BitIoLdd23.h"
+#include "IRQ1.h"
+#include "ExtIntLdd2.h"
+#include "SM2_nRF.h"
+#include "SMasterLdd1.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -301,6 +312,22 @@ void TU_US_OnCounterRestart(LDD_TUserData *UserDataPtr);
 */
 /* ===================================================================*/
 void TU_US_OnChannel0(LDD_TUserData *UserDataPtr);
+
+void RNET1_OnRadioEvent(RNET1_RadioEvent event);
+/*
+** ===================================================================
+**     Event       :  RNET1_OnRadioEvent (module Events)
+**
+**     Component   :  RNET1 [RNet]
+**     Description :
+**         Event created for various radio states, like timeout, ack
+**         received, data sent, ...
+**     Parameters  :
+**         NAME            - DESCRIPTION
+**         event           - 
+**     Returns     : Nothing
+** ===================================================================
+*/
 
 /* END Events */
 

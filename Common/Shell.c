@@ -27,8 +27,8 @@
 #if PL_HAS_MOTOR
   #include "Motor.h"
 #endif
-#if PL_HAS_MPC4728
-  #include "MPC4728.h"
+#if PL_HAS_MCP4728
+  #include "MCP4728.h"
 #endif
 #if PL_HAS_QUAD_CALIBRATION
   #include "QuadCalib.h"
@@ -55,6 +55,20 @@
 #if PL_HAS_ULTRASONIC
   #include "Ultrasonic.h"
 #endif
+#if PL_HAS_RADIO
+  #include "RNET1.h"
+  #include "RNet_App.h"
+  #include "RNetConf.h"
+#endif
+#if RNET_CONFIG_REMOTE_STDIO
+  #include "RStdIO.h"
+#endif
+#if PL_HAS_REMOTE
+  #include "Remote.h"
+#endif
+
+
+
 
 /* forward declaration */
 static uint8_t SHELL_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOType *io);
@@ -79,8 +93,8 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 #if PL_HAS_MOTOR
   MOT_ParseCommand,
 #endif
-#if PL_HAS_MPC4728
-  MPC4728_ParseCommand,
+#if PL_HAS_MCP4728
+  MCP4728_ParseCommand,
 #endif
 #if PL_HAS_QUAD_CALIBRATION
   QUADCALIB_ParseCommand,
