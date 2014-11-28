@@ -32,16 +32,20 @@ void DRV_SetSpeed(int32_t left, int32_t right) {
 static portTASK_FUNCTION(DriveTask, pvParameters) {
   (void)pvParameters; /* parameter not used */
   bool prevOn;
-  traceLabel usrEvent;
+#if PL_HAS_RTOS_TRACE
+  traceLabel usrEventChannel;
+  int32_t currSpeed, prevSpeed, prevSpeedLeft;
+#endif
 
   prevOn = DRV_SpeedOn;
 #if PL_HAS_RTOS_TRACE
-  //usrEvent = xTraceOpenLabel("drive");
+  usrEventChannel = RTOSTRC1_xTraceOpenLabel("Speed");
+  RTOSTRC1_vTracePrintF(usrEventChannel, "%d", 0); /* initial value */
+  RTOSTRC1_vTraceStop();
+  RTOSTRC1_vTraceClear();
+  prevSpeedLeft = 0;
 #endif
   for(;;) {
-#if PL_HAS_RTOS_TRACE
-    //RTOSTRC1_vTraceUserEvent(usrEvent);
-#endif
     /*! \todo extend this for your own needs and with a position PID */
     TACHO_CalcSpeed();
     if (prevOn && !DRV_SpeedOn) { /* turned off */
@@ -49,6 +53,18 @@ static portTASK_FUNCTION(DriveTask, pvParameters) {
       MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), 0);
       PID_Start(); /* reset values */
     } else if (DRV_SpeedOn) {
+#if PL_HAS_RTOS_TRACE
+      if (DRV_SpeedLeft!=prevSpeedLeft) {
+        RTOSTRC1_uiTraceStart();
+        RTOSTRC1_vTracePrintF(usrEventChannel, "%d", currSpeed);
+        prevSpeedLeft = DRV_SpeedLeft;
+      }
+      currSpeed = TACHO_GetSpeed(TRUE);
+      if (currSpeed!=prevSpeed) { /* only log if changed */
+        RTOSTRC1_vTracePrintF(usrEventChannel, "%d", currSpeed);
+        prevSpeed = currSpeed;
+      }
+#endif
       PID_Speed(TACHO_GetSpeed(TRUE), DRV_SpeedLeft, TRUE); /* left */
       PID_Speed(TACHO_GetSpeed(FALSE), DRV_SpeedRight, FALSE); /* right */
     }

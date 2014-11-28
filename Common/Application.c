@@ -38,8 +38,26 @@
 #if PL_HAS_MOTOR
   #include "Motor.h"
 #endif
+#if PL_HAS_ACCEL
+  #include "ACCEL.h"
+  #include "MMA1.h"
+#endif
+#if PL_HAS_DRIVE
+#include "Drive.h"
+#endif
+#if PL_HAS_ULTRASONIC
+#include "Ultrasonic.h"
+#endif
 
 static uint8_t lastKeyPressed;
+
+
+void APP_DebugPrint(unsigned char *str) {
+#if PL_HAS_SHELL
+  CLS1_SendStr(str, CLS1_GetStdio()->stdOut);
+#endif
+}
+
 
 static void APP_EventHandler(EVNT_Handle event) {
   switch(event) {
@@ -148,24 +166,62 @@ static void APP_EventHandler(EVNT_Handle event) {
 }
 
 #if PL_HAS_RTOS
-static void AppTask(void *pvParameters) {
-  (void)pvParameters; /* not used */
-#if PL_HAS_SHELL
-  //CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
-#endif
-  for(;;) {
-#if PL_HAS_EVENTS
-    EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
-   EVNT_SetEvent(EVNT_BLINK_LED);
-#endif
-#if PL_HAS_KEYS && PL_NOF_KEYS>0
-    KEY_Scan(); /* scan keys */
-#endif
-#if PL_HAS_MEALY
-    MEALY_Step();
-#endif
-    FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
 
+
+
+static void AppTask(void *pvParameters) {
+	(void)pvParameters; /* not used */
+	#if PL_HAS_SHELL
+		//CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
+	#endif
+
+  //ACCEL verwendet I2C. I2C verwendet interrupts. Diese sind bei'Normalen'
+  //Init noch nicht eingeschaltet. Darum hier Initialisieren.
+	#if PL_HAS_ACCEL /* need to initialize accelerometer from a task (interrupts enabled). */
+		ACCEL_LowLevelInit();
+	#endif
+
+	for(;;) {
+		#if PL_HAS_EVENTS
+			EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+			EVNT_SetEvent(EVNT_BLINK_LED);
+		#endif
+
+		#if PL_HAS_KEYS && PL_NOF_KEYS>0
+			KEY_Scan(); /* scan keys */
+		#endif
+
+		#if PL_HAS_MEALY
+			MEALY_Step();
+		#endif
+
+
+		#if (PL_HAS_ACCEL && PL_HAS_ULTRASONIC)
+
+			if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
+				#if PL_HAS_BUZZER
+					//BUZ_Beep(800,100);
+				#endif
+				#if PL_HAS_DRIVE
+					DRV_EnableDisable(FALSE);
+				#endif
+				#if PL_HAS_LED
+					LED2_On();
+				#endif
+
+			}else{
+				#if PL_HAS_DRIVE
+				 	DRV_EnableDisable(TRUE);
+				#endif
+				#if PL_HAS_LED
+					LED2_Off();
+				#endif
+			}
+		#endif
+
+
+
+		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
   }
 }
 #else
@@ -193,36 +249,37 @@ static void APP_Loop(void) {
 #endif
 
 void APP_Start(void) {
-  PL_Init(); /* platform initialization */
-
-	LED1_On();
-	int32_t val;
-			val=10;
-
-	 //MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT) , (MOT_SpeedPercent)val);
-	 //MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT) , (MOT_SpeedPercent)val);
+	#if PL_HAS_RTOS_TRACE
+	  if (RTOSTRC1_uiTraceStart()==0) {
+		for(;;){} /* error starting trace recorder. Not setup for enough queues/tasks/etc? */
+	  }
+	#endif
 
 
+ 	PL_Init(); /* platform initialization */
 
-#if PL_HAS_BUZZER
-	 BUZ_Beep(2000, 500);
+	#if PL_HAS_BUZZER
+		 BUZ_Beep(2000, 500);
+	#endif
 
-#endif
+	#if PL_HAS_LED
+		 LED1_On();
+	#endif
 
+	EVNT_SetEvent(EVNT_INIT); /* set initial event */
+	EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+	WAIT1_Waitms(1000);
 
-  //TEST_Test();
-  EVNT_SetEvent(EVNT_INIT); /* set initial event */
-  EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
-  WAIT1_Waitms(1000);
+	#if PL_HAS_RTOS
+	 	 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
+	 		 for(;;){} /* error */
+	 	 }
 
-#if PL_HAS_RTOS
-  if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
-    for(;;){} /* error */
-  }
-  RTOS_Run();
-#else
-  APP_Loop();
-#endif
+	 	 RTOS_Run();
+
+	#else
+	 	 APP_Loop();
+	#endif
 
 
 #if 0

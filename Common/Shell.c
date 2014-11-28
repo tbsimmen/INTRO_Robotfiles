@@ -113,6 +113,13 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 #if PL_HAS_ULTRASONIC
   US_ParseCommand,
 #endif
+#if PL_HAS_RADIO
+  RNET1_ParseCommand,
+  RNETA_ParseCommand,
+#endif
+#if PL_HAS_REMOTE
+  REMOTE_ParseCommand,
+#endif
   NULL /* Sentinel */
 
 };
@@ -222,6 +229,10 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #if CLS1_DEFAULT_SERIAL
   CLS1_ConstStdIOTypePtr ioLocal = CLS1_GetStdio();  
 #endif
+#if RNET_CONFIG_REMOTE_STDIO
+  static unsigned char radio_cmd_buf[48];
+  CLS1_ConstStdIOType *ioRemote = RSTDIO_GetStdioRx();
+#endif
   
   (void)pvParameters; /* not used */
 #if PL_HAS_USB_CDC
@@ -229,6 +240,9 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #endif
 #if PL_HAS_BLUETOOTH
   bluetooth_buf[0] = '\0';
+#endif
+#if RNET_CONFIG_REMOTE_STDIO
+  radio_cmd_buf[0] = '\0';
 #endif
   localConsole_buf[0] = '\0';
 #if CLS1_DEFAULT_SERIAL
