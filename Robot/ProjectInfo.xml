@@ -127,7 +127,6 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RStack.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RStdIO.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RTOSCNTRLDD1.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RTOSTRC1.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\Radio.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RefCnt.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\Rx1.c</PathName>
@@ -158,11 +157,6 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\queue.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\tasks.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\timers.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcBase.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcHardwarePort.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcKernel.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcKernelPort.c</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcUser.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\usb_cdc.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\usb_cdc_pstn.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\usb_class.c</PathName>
@@ -287,7 +281,6 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RStack.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RStdIO.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RTOSCNTRLDD1.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RTOSTRC1.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\Radio.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RadioNRF24.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\RefCnt.h</PathName>
@@ -323,14 +316,6 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\semphr.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\task.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\timers.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcBase.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcConfig.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcHardwarePort.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcKernel.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcKernelHooks.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcKernelPort.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcTypes.h</PathName>
-      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\trcUser.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\types.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\usb_bdt_kinetis.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Generated_Code\usb_cdc.h</PathName>

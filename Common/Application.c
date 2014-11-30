@@ -63,7 +63,7 @@ static void APP_EventHandler(EVNT_Handle event) {
   switch(event) {
     case EVNT_INIT:
 #if PL_HAS_BUZZER
-    	  BUZ_Beep(2000, 1000);
+    	  BUZ_Beep(500, 1000);
 #endif
       LED1_On();
       WAIT1_Waitms(100);
