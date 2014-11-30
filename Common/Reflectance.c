@@ -1,11 +1,10 @@
-/*
- * Reflectance.c
+/**
+ * \file
+ * \brief Reflectance sensor driver implementation.
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 07.11.2014
- *      Author: tbsimmen
+ * This module implements the driver for the bot front sensor.
  */
-
-
 
 #include "Platform.h"
 #if PL_HAS_LINE_SENSOR
@@ -24,8 +23,21 @@
 #include "Application.h"
 #include "Event.h"
 #include "Shell.h"
+#include "NVM_Config.h"
+#if PL_HAS_BUZZER
+#include "Buzzer.h"
+#endif
 
 #define REF_NOF_SENSORS 6 /* number of sensors */
+
+#define REF_PROTECTED_MEASURE  1 /* different variant with protection */
+#define REF_CALIBRATE_FLASH    1 /* calibration values in FLASH */
+
+#if REF_PROTECTED_MEASURE
+  #define REF_SENSOR_TIMEOUT_US  1500  /* after this time, consider no reflection (black). Must be smaller than the timeout period of the RefCnt timer! */
+  #define REF_SENSOR_TIMOUT_VAL  ((RefCnt_CNT_INP_FREQ_U_0/1000)*REF_SENSOR_TIMEOUT_US)/1000
+static xSemaphoreHandle mutexHandle; /* semaphore to protect access to sensor */
+#endif
 
 typedef enum {
   REF_STATE_INIT,
@@ -99,6 +111,67 @@ static const SensorFctType SensorFctArray[REF_NOF_SENSORS] = {
   {S6_SetOutput, S6_SetInput, S6_SetVal, S6_GetVal},
 };
 
+#if REF_CALIBRATE_FLASH
+void REF_CalibrateStartStop(void) {
+  if (refState==REF_STATE_NOT_CALIBRATED || refState==REF_STATE_CALIBRATING || refState==REF_STATE_READY) {
+    EVNT_SetEvent(EVNT_REF_START_STOP_CALIBRATION);
+  }
+}
+#endif
+
+#if REF_PROTECTED_MEASURE
+/*!
+ * \brief Measures the time until the sensor discharges
+ * \param raw Array to store the raw values.
+ * \return ERR_OVERFLOW if there is a timeout, ERR_OK otherwise
+ */
+static bool REF_MeasureRaw(SensorTimeType raw[REF_NOF_SENSORS], RefCnt_TValueType timeoutCntVal) {
+  uint8_t cnt; /* number of sensor */
+  uint8_t i;
+  bool isTimeout = FALSE;
+  RefCnt_TValueType timerVal;
+
+  FRTOS1_xSemaphoreTake(mutexHandle, portMAX_DELAY);
+  LED_IR_On(); /* IR LED's on */
+  WAIT1_Waitus(200);
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    SensorFctArray[i].SetOutput(); /* turn I/O line as output */
+    SensorFctArray[i].SetVal(); /* put high */
+    raw[i] = MAX_SENSOR_VALUE;
+  }
+  WAIT1_Waitus(50); /* give at least 10 us to charge the capacitor */
+  taskENTER_CRITICAL();
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    SensorFctArray[i].SetInput(); /* turn I/O line as input */
+  }
+  (void)RefCnt_ResetCounter(timerHandle); /* reset timer counter */
+  do {
+    cnt = 0;
+    timerVal = RefCnt_GetCounterValue(timerHandle);
+    if (timerVal>timeoutCntVal) {
+      isTimeout = TRUE;
+      break; /* get out of while loop */
+    }
+    for(i=0;i<REF_NOF_SENSORS;i++) {
+      if (raw[i]==MAX_SENSOR_VALUE) { /* not measured yet? */
+        if (SensorFctArray[i].GetVal()==0) {
+          raw[i] = timerVal;
+        }
+      } else { /* have value */
+        cnt++;
+      }
+    }
+  } while(cnt!=REF_NOF_SENSORS);
+  taskEXIT_CRITICAL();
+  LED_IR_Off(); /* IR LED's off */
+  FRTOS1_xSemaphoreGive(mutexHandle);
+  if (isTimeout) {
+    return ERR_OVERFLOW;
+  } else {
+    return ERR_OK;
+  }
+}
+#else
 static void REF_MeasureRaw(SensorTimeType raw[REF_NOF_SENSORS]) {
   uint8_t cnt; /* number of sensor */
   uint8_t i;
@@ -131,11 +204,16 @@ static void REF_MeasureRaw(SensorTimeType raw[REF_NOF_SENSORS]) {
   } while(cnt!=REF_NOF_SENSORS);
   LED_IR_Off();
 }
+#endif
 
 static void REF_CalibrateMinMax(SensorTimeType min[REF_NOF_SENSORS], SensorTimeType max[REF_NOF_SENSORS], SensorTimeType raw[REF_NOF_SENSORS]) {
   int i;
 
+#if REF_PROTECTED_MEASURE
+  REF_MeasureRaw(raw, REF_SENSOR_TIMOUT_VAL);
+#else
   REF_MeasureRaw(raw);
+#endif
   for(i=0;i<REF_NOF_SENSORS;i++) {
     if (raw[i] < min[i]) {
       min[i] = raw[i];
@@ -149,8 +227,22 @@ static void REF_CalibrateMinMax(SensorTimeType min[REF_NOF_SENSORS], SensorTimeT
 static void ReadCalibrated(SensorTimeType calib[REF_NOF_SENSORS], SensorTimeType raw[REF_NOF_SENSORS]) {
   int i;
   int32_t x, denominator;
+#if REF_PROTECTED_MEASURE
+  RefCnt_TValueType max;
 
+  max = 0; /* determine maximum timeout value */
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    if (SensorCalibMinMax.maxVal[i]>max) {
+      max = SensorCalibMinMax.maxVal[i];
+    }
+  }
+  if (max>REF_SENSOR_TIMOUT_VAL) {
+    max = REF_SENSOR_TIMOUT_VAL;
+  }
+  REF_MeasureRaw(raw, max);
+#else
   REF_MeasureRaw(raw);
+#endif
   for(i=0;i<REF_NOF_SENSORS;i++) {
     x = 0;
     denominator = SensorCalibMinMax.maxVal[i]-SensorCalibMinMax.minVal[i];
@@ -173,6 +265,9 @@ static void REF_Measure(void) {
 static uint8_t PrintHelp(const CLS1_StdIOType *io) {
   CLS1_SendHelpStr((unsigned char*)"ref", (unsigned char*)"Group of Reflectance commands\r\n", io->stdOut);
   CLS1_SendHelpStr((unsigned char*)"  help|status", (unsigned char*)"Print help or status information\r\n", io->stdOut);
+#if REF_CALIBRATE_FLASH
+  CLS1_SendHelpStr((unsigned char*)"  calib (start|stop)", (unsigned char*)"Start/Stop calibrating while moving sensor over line\r\n", io->stdOut);
+#endif
   return ERR_OK;
 }
 
@@ -255,6 +350,26 @@ byte REF_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOT
   } else if ((UTIL1_strcmp((char*)cmd, CLS1_CMD_STATUS)==0) || (UTIL1_strcmp((char*)cmd, "ref status")==0)) {
     *handled = TRUE;
     return PrintStatus(io);
+#if REF_CALIBRATE_FLASH
+  } else if (UTIL1_strcmp((char*)cmd, "ref calib start")==0) {
+    if (refState==REF_STATE_NOT_CALIBRATED || refState==REF_STATE_READY) {
+      REF_CalibrateStartStop();
+    } else {
+      CLS1_SendStr((unsigned char*)"ERROR: cannot start calibration, must not be calibrating or be ready.\r\n", io->stdErr);
+      return ERR_FAILED;
+    }
+    *handled = TRUE;
+    return ERR_OK;
+  } else if (UTIL1_strcmp((char*)cmd, "ref calib stop")==0) {
+    if (refState==REF_STATE_CALIBRATING) {
+      REF_CalibrateStartStop();
+    } else {
+      CLS1_SendStr((unsigned char*)"ERROR: can only stop if calibrating.\r\n", io->stdErr);
+      return ERR_FAILED;
+    }
+    *handled = TRUE;
+    return ERR_OK;
+#endif
   }
   return ERR_OK;
 }
@@ -264,12 +379,32 @@ static void REF_StateMachine(void) {
 
   switch (refState) {
     case REF_STATE_INIT:
+#if REF_CALIBRATE_FLASH
+      {
+        SensorCalibT *SensorCalibMinMaxPtr;
+
+        SensorCalibMinMaxPtr = (SensorCalibT*)NVMC_GetReflectanceData();
+        if (SensorCalibMinMaxPtr!=NULL) { /* use calibration data from FLASH */
+          SensorCalibMinMax = *SensorCalibMinMaxPtr; /* struct copy */
+          refState = REF_STATE_READY;
+        } else {
+          SHELL_SendString((unsigned char*)"INFO: No calibration data present.\r\n");
+          refState = REF_STATE_NOT_CALIBRATED;
+        }
+      }
+
+#else
       SHELL_SendString((unsigned char*)"INFO: No calibration data present.\r\n");
       refState = REF_STATE_NOT_CALIBRATED;
+#endif
       break;
 
     case REF_STATE_NOT_CALIBRATED:
+#if REF_PROTECTED_MEASURE
+      (void)REF_MeasureRaw(SensorRaw, REF_SENSOR_TIMOUT_VAL);
+#else
       REF_MeasureRaw(SensorRaw);
+#endif
       /*! \todo Add a new event to your event module...*/
       if (EVNT_EventIsSet(EVNT_REF_START_STOP_CALIBRATION)) {
         EVNT_ClearEvent(EVNT_REF_START_STOP_CALIBRATION);
@@ -290,6 +425,9 @@ static void REF_StateMachine(void) {
 
     case REF_STATE_CALIBRATING:
       REF_CalibrateMinMax(SensorCalibMinMax.minVal, SensorCalibMinMax.maxVal, SensorRaw);
+#if PL_HAS_BUZZER
+      (void)BUZ_Beep(300, 20);
+#endif
       if (EVNT_EventIsSet(EVNT_REF_START_STOP_CALIBRATION)) {
         EVNT_ClearEvent(EVNT_REF_START_STOP_CALIBRATION);
         refState = REF_STATE_STOP_CALIBRATION;
@@ -298,6 +436,11 @@ static void REF_StateMachine(void) {
 
     case REF_STATE_STOP_CALIBRATION:
       SHELL_SendString((unsigned char*)"...stopping calibration.\r\n");
+#if REF_CALIBRATE_FLASH
+      if (NVMC_SaveReflectanceData((void*)&SensorCalibMinMax, sizeof(SensorCalibMinMax))!=ERR_OK) {
+        SHELL_SendString((unsigned char*)"FAILED saving calibration.\r\n");
+      }
+#endif
       refState = REF_STATE_READY;
       break;
 
@@ -329,5 +472,15 @@ void REF_Init(void) {
   if (FRTOS1_xTaskCreate(ReflTask, "Refl", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
     for(;;){} /* error */
   }
+#if REF_PROTECTED_MEASURE
+  mutexHandle = FRTOS1_xSemaphoreCreateMutex();
+  if (mutexHandle==NULL) {
+    for(;;);
+  }
+  FRTOS1_vQueueAddToRegistry(mutexHandle, "RefSem");
+#if PL_HAS_RTOS_TRACE
+  RTOSTRC1_vTraceSetQueueName(mutexHandle, "RefSem");
+#endif
+#endif
 }
 #endif /* PL_HAS_LINE_SENSOR */

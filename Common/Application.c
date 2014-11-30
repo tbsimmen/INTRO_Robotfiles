@@ -35,12 +35,14 @@
   #include "RTOS.h"
   #include "FRTOS1.h"
 #endif
-#if PL_HAS_MOTOR
-  #include "Motor.h"
+#if PL_HAS_RTOS_TRACE
+  #include "RTOSTRC1.h"
 #endif
 #if PL_HAS_ACCEL
-  #include "ACCEL.h"
-  #include "MMA1.h"
+  #include "Accel.h"
+#endif
+#if PL_HAS_MOTOR
+  #include "Motor.h"
 #endif
 #if PL_HAS_DRIVE
 #include "Drive.h"
@@ -48,8 +50,9 @@
 #if PL_HAS_ULTRASONIC
 #include "Ultrasonic.h"
 #endif
-
-static uint8_t lastKeyPressed;
+#if PL_HAS_REMOTE
+  #include "Remote.h"
+#endif
 
 
 void APP_DebugPrint(unsigned char *str) {
@@ -58,7 +61,171 @@ void APP_DebugPrint(unsigned char *str) {
 #endif
 }
 
+#if 1
+void HandleEvents(void){
+	if(EVNT_EventIsSetAutoClear(EVNT_INIT)){
+		#if PL_HAS_BUZZER
+				  BUZ_Beep(800, 1000);
+		#endif
+			  LED1_On();
+			  WAIT1_Waitms(100);
+			  LED1_Off();
+			  LED2_On();
+			  WAIT1_Waitms(100);
+			  LED2_Off();
+			  LED3_On();
+			  WAIT1_Waitms(100);
+			  LED3_Off();
+			  WAIT1_Waitms(200);
+			  LED1_On();
+			  LED2_On();
+			  LED3_On();
+			  WAIT1_Waitms(200);
+			  LED1_Off();
+			  LED2_Off();
+			  LED3_Off();
+	}else if (EVNT_EventIsSetAutoClear(EVENT_LED_HEARTBEAT)) {
+	    LED2_Neg();
+	}else if (EVNT_EventIsSetAutoClear(EVNT_BLINK_LED)) {
+		    LED1_Neg();
+			
+	#if PL_NOF_KEYS >= 1
+		} else if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW1 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW1 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW1 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 2
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW2_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW2 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW2_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW2 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW2_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW2 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 3
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW3_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW3 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW3_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW3 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW3_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW3 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 4
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW4_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW4 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW4_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW4 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW4_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW4 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 5
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW5_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW5 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW5_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW5 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW5_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW5 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 6
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW6_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW6 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			  BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW6_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW6 long pressed!\r\n");
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW6_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW6 released!\r\n");
+		  #endif
+	#endif
+	#if PL_NOF_KEYS >= 7
+			} else if (EVNT_EventIsSetAutoClear(EVNT_SW7_PRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW7 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			BUZ_Beep(300, 500);
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW7_LPRESSED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW7 long pressed!\r\n");
+		  #endif
+		  #if PL_HAS_REMOTE
+				if (REMOTE_GetOnOff()) {
+				  REMOTE_SetOnOff(FALSE);
+				#if PL_HAS_SHELL
+				  SHELL_SendString("Remote is now OFF!\r\n");
+				#endif
+				} else {
+				  REMOTE_SetOnOff(TRUE);
+				#if PL_HAS_SHELL
+				  SHELL_SendString("Remote is now ON!\r\n");
+				#endif
+				}
+				
+		  #endif
+		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW7_RELEASED)) {
+		  #if PL_HAS_SHELL
+			SHELL_SendString("SW7 released!\r\n");
+		  #endif
+	#endif
+	  }
+}
 
+#else
 static void APP_EventHandler(EVNT_Handle event) {
   switch(event) {
     case EVNT_INIT:
@@ -162,6 +329,42 @@ static void APP_EventHandler(EVNT_Handle event) {
       break;
   }
 }
+#endif
+
+#if PL_HAS_ACCEL_STOP
+static void APP_CheckAccelRobotStop(void) {
+  int16_t x, y, z;
+  bool isEnabled;
+  uint8_t res;
+  #define ACCEL_OK_CONDITION(x,y,z) ((z)>700 && (z)<1300 && (x)>-700 && (x)<700 && (y)>-700 && (y)<700)
+
+  res = ACCEL_isEnabled(&isEnabled);
+  if (res==ERR_OK && isEnabled) {
+    ACCEL_GetValues(&x, &y, &z);
+    if (!ACCEL_OK_CONDITION(x,y,z)) { /* measure again */
+      FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+      ACCEL_GetValues(&x, &y, &z);
+      if (!ACCEL_OK_CONDITION(x,y,z)) {
+        MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), 0);
+        MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), 0);
+  #if PL_HAS_DRIVE
+        DRV_SetSpeed(0, 0);
+  #endif
+  #if PL_HAS_SHELL
+        SHELL_SendString((unsigned char*)"Engines stopped!\r\n");
+  #endif
+  #if PL_HAS_BUZZER
+        (void)BUZ_Beep(300, 500);
+  #endif
+      }
+    }
+  } else {
+    SHELL_SendString((unsigned char*)"Accelerometer disabled?\r\n");
+    (void)ACCEL_Enable();
+  }
+
+}
+#endif
 
 #if PL_HAS_RTOS
 
@@ -181,7 +384,11 @@ static void AppTask(void *pvParameters) {
 
 	for(;;) {
 		#if PL_HAS_EVENTS
-			EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+			#if 1
+				HandleEvents();
+			#else
+				EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+			#endif
 			EVNT_SetEvent(EVNT_BLINK_LED);
 		#endif
 
@@ -192,45 +399,6 @@ static void AppTask(void *pvParameters) {
 		#if PL_HAS_MEALY
 			MEALY_Step();
 		#endif
-
-
-		#if (PL_HAS_ACCEL)// && PL_HAS_ULTRASONIC)
-
-		#if PL_IS_ROBO
-			if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
-		#else
-			if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0)) {
-		#endif
-					#if PL_HAS_BUZZER
-					BUZ_Beep(800,100);
-				#endif
-				#if PL_HAS_DRIVE
-					DRV_EnableDisable(FALSE);
-				#endif
-				#if PL_HAS_LED
-					#if PL_IS_FRDM
-						LED3_On();
-						LED2_On();
-					#else
-						LED2_On();
-					#endif
-				#endif
-
-			}else{
-				#if PL_HAS_DRIVE
-				 	DRV_EnableDisable(TRUE);
-				#endif
-				#if PL_HAS_LED
-					#if PL_IS_FRDM
-						LED3_Off();
-						LED2_Off();
-					#else
-						LED2_Off();
-					#endif
-				#endif
-			}
-		#endif
-
 
 
 		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
@@ -270,20 +438,9 @@ void APP_Start(void) {
 
  	PL_Init(); /* platform initialization */
 
-	#if PL_HAS_BUZZER
-		 BUZ_Beep(2000, 500);
-	#endif
-
-	#if PL_HAS_LED
-		#if PL_IS_ROBO
-		 LED1_On();
-		#endif
-
-	#endif
 
 	EVNT_SetEvent(EVNT_INIT); /* set initial event */
-	EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
-	WAIT1_Waitms(1000);
+	//EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
 
 	#if PL_HAS_RTOS
 	 	 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
