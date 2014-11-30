@@ -40,6 +40,7 @@
 #endif
 #if PL_HAS_ACCEL
   #include "Accel.h"
+  #include "MMA1.h"
 #endif
 #if PL_HAS_MOTOR
   #include "Motor.h"
@@ -333,36 +334,35 @@ static void APP_EventHandler(EVNT_Handle event) {
 
 #if PL_HAS_ACCEL_STOP
 static void APP_CheckAccelRobotStop(void) {
-  int16_t x, y, z;
-  bool isEnabled;
-  uint8_t res;
-  #define ACCEL_OK_CONDITION(x,y,z) ((z)>700 && (z)<1300 && (x)>-700 && (x)<700 && (y)>-700 && (y)<700)
+	if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
+		#if PL_HAS_BUZZER
+			BUZ_Beep(800,100);
+		#endif
+		#if PL_HAS_DRIVE
+			DRV_EnableDisable(FALSE);
+		#endif
+		#if PL_HAS_LED
+			#if PL_IS_FRDM
+				LED3_On();
+				LED2_On();
+			#else
+				LED2_On();
+			#endif
+		#endif
 
-  res = ACCEL_isEnabled(&isEnabled);
-  if (res==ERR_OK && isEnabled) {
-    ACCEL_GetValues(&x, &y, &z);
-    if (!ACCEL_OK_CONDITION(x,y,z)) { /* measure again */
-      FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
-      ACCEL_GetValues(&x, &y, &z);
-      if (!ACCEL_OK_CONDITION(x,y,z)) {
-        MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), 0);
-        MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), 0);
-  #if PL_HAS_DRIVE
-        DRV_SetSpeed(0, 0);
-  #endif
-  #if PL_HAS_SHELL
-        SHELL_SendString((unsigned char*)"Engines stopped!\r\n");
-  #endif
-  #if PL_HAS_BUZZER
-        (void)BUZ_Beep(300, 500);
-  #endif
-      }
-    }
-  } else {
-    SHELL_SendString((unsigned char*)"Accelerometer disabled?\r\n");
-    (void)ACCEL_Enable();
-  }
-
+	}else{
+		#if PL_HAS_DRIVE
+		 	DRV_EnableDisable(TRUE);
+		#endif
+		#if PL_HAS_LED
+			#if PL_IS_FRDM
+				LED3_Off();
+				LED2_Off();
+			#else
+				LED2_Off();
+			#endif
+		#endif
+	}
 }
 #endif
 
@@ -400,6 +400,10 @@ static void AppTask(void *pvParameters) {
 			MEALY_Step();
 		#endif
 
+
+		#if PL_HAS_ACCEL_STOP
+			APP_CheckAccelRobotStop();
+		#endif
 
 		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
   }
