@@ -72,9 +72,9 @@
   /*!< Set to 1 if using motors, 0 otherwise */
 #define PL_HAS_CONFIG_NVM     (1)
   /*!< Set to 1 if using NVMC, 0 otherwise */
-#define PL_HAS_MPC4728        (1 && PL_IS_ROBO)
+#define PL_HAS_MCP4728        (1 && PL_IS_ROBO)
   /*!< Set to 1 if using MCP4728, 0 otherwise */
-#define PL_HAS_QUAD_CALIBRATION (1 && PL_HAS_MPC4728)
+#define PL_HAS_QUAD_CALIBRATION (1 && PL_HAS_MCP4728)
   /*!< Set to 1 if using quadrature calibration, 0 otherwise */
 #define PL_HAS_QUADRATURE     (1 && PL_IS_ROBO)
   /*!< Set to 1 if using quadrature counters, 0 otherwise */

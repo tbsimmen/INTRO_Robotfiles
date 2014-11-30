@@ -191,6 +191,7 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\RNet_App.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\RTOS.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Reflectance.c</PathName>
+      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Remote.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Sem.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Shell.c</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\ShellQueue.c</PathName>
@@ -362,6 +363,7 @@
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\RNet_AppConfig.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\RTOS.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Reflectance.h</PathName>
+      <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Remote.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Sem.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\Shell.h</PathName>
       <PathName>C:\Users\tbsimmen\Documents\INTRO_RobotFiles\Robot\Sources\Common\ShellQueue.h</PathName>
