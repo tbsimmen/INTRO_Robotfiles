@@ -71,6 +71,11 @@ static SensorCalibT SensorCalibMinMax; /* min/max calibration data in SRAM */
 static SensorTimeType SensorRaw[REF_NOF_SENSORS]; /* raw sensor values */
 static SensorTimeType SensorCalibrated[REF_NOF_SENSORS]; /* 0 means white/min value, 1000 means black/max value */
 
+uint16_t SensorValue(int nr){
+	return SensorCalibrated[nr];
+}
+
+
 /* Functions as wrapper around macro. */
 static void S1_SetOutput(void) { IR1_SetOutput(); }
 static void S1_SetInput(void) { IR1_SetInput(); }

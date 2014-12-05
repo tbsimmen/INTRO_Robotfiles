@@ -66,6 +66,9 @@ void APP_DebugPrint(unsigned char *str) {
 #endif
 }
 
+void SumoInit(void);
+
+
 #if 1
 void HandleEvents(void){
 	if(EVNT_EventIsSetAutoClear(EVNT_INIT)){
@@ -101,6 +104,8 @@ void HandleEvents(void){
 		  #if PL_HAS_BUZZER
 			BUZ_Beep(300, 500);
 		  #endif
+			//StarteSumoFight
+			SumoInit();
 
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_LPRESSED)) {
 		  #if PL_HAS_SHELL
@@ -341,7 +346,7 @@ static void APP_EventHandler(EVNT_Handle event) {
 
 #if PL_HAS_ACCEL_STOP
 static void APP_CheckAccelRobotStop(void) {
-	if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
+	if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0)) {
 		#if PL_HAS_BUZZER
 			BUZ_Beep(800,100);
 		#endif
@@ -350,10 +355,10 @@ static void APP_CheckAccelRobotStop(void) {
 		#endif
 		#if PL_HAS_LED
 			#if PL_IS_FRDM
-				LED3_On();
-				LED2_On();
+				//LED3_On();
+				//LED2_On();
 			#else
-				LED2_On();
+				// LED2_On();
 			#endif
 		#endif
 
@@ -363,10 +368,10 @@ static void APP_CheckAccelRobotStop(void) {
 		#endif
 		#if PL_HAS_LED
 			#if PL_IS_FRDM
-				LED3_Off();
-				LED2_Off();
+				//LED3_Off();
+				//LED2_Off();
 			#else
-				LED2_Off();
+			//	LED2_Off();
 			#endif
 		#endif
 	}
@@ -491,6 +496,62 @@ void APP_Start(void) {
   PL_Deinit();
 }
 
+
+
+static portTASK_FUNCTION(SumoTask, pvParameters) {
+  (void)pvParameters; /* parameter not used */
+  uint8_t buf[16];
+  uint16_t cm, us;
+
+  //FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
+#if 0
+	for(;;){
+		us = US_Measure_us();
+		cm = US_usToCentimeters(us, 22);
+
+		if(( cm > 6) && ( cm != 0)){ //Objekt erkannt
+			BUZ_Beep(400,51);
+		}
+		FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
+	}
+#endif
+
+#if 1
+	DRV_SetSpeed(1000, 1000);
+
+	for(;;){
+
+		int i;
+	//static SensorTimeType SensorCalibrated[REF_NOF_SENSORS]; /* 0 means white/min value, 1000 means black/max value */
+		 for(i=0;i<6;i++) {
+			 if(SensorValue(i) < 500){
+				 DRV_SetSpeed(0,0);
+			 }
+		 }
+
+		FRTOS1_vTaskDelay(103/portTICK_RATE_MS);
+	}
+#endif
+}
+
+void SumoInit(void){
+
+	DRV_EnableDisable(FALSE);
+
+#if 1
+	if (FRTOS1_xTaskCreate(
+			 SumoTask,
+			 "SumoRob",
+			 configMINIMAL_STACK_SIZE,
+			 (void*)NULL,
+			 tskIDLE_PRIORITY+2,
+			 (xTaskHandle*)NULL
+			 ) != pdPASS) {
+		 	 for(;;){} /* error */
+		}
+#endif
+
+}
 
 
 

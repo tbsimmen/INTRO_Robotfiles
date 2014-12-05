@@ -40,6 +40,8 @@ void REF_Init(void);
 
 void REF_CalibrateStartStop(void);
 
+uint16_t SensorValue(int);
+
 #endif /* PL_HAS_LINE_SENSOR */
 
 #endif /* REFLECTANCE_H_ */
