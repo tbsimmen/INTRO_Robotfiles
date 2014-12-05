@@ -54,6 +54,10 @@
 #if PL_HAS_REMOTE
   #include "Remote.h"
 #endif
+#if PL_HAS_REFLECTANCE
+  #include "Reflectance.h"
+#endif
+
 
 
 void APP_DebugPrint(unsigned char *str) {
@@ -66,7 +70,7 @@ void APP_DebugPrint(unsigned char *str) {
 void HandleEvents(void){
 	if(EVNT_EventIsSetAutoClear(EVNT_INIT)){
 		#if PL_HAS_BUZZER
-				  BUZ_Beep(800, 1000);
+				//  BUZ_Beep(800, 1000);
 		#endif
 			  LED1_On();
 			  WAIT1_Waitms(100);
@@ -89,7 +93,6 @@ void HandleEvents(void){
 	    LED2_Neg();
 	}else if (EVNT_EventIsSetAutoClear(EVNT_BLINK_LED)) {
 		    LED1_Neg();
-			
 	#if PL_NOF_KEYS >= 1
 		} else if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)) {
 		  #if PL_HAS_SHELL
@@ -98,10 +101,15 @@ void HandleEvents(void){
 		  #if PL_HAS_BUZZER
 			BUZ_Beep(300, 500);
 		  #endif
+
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_LPRESSED)) {
 		  #if PL_HAS_SHELL
 			SHELL_SendString("SW1 long pressed!\r\n");
 		  #endif
+			//Starte Reflectance Kalibration
+			REF_CalibrateStartStop();
+
+
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_RELEASED)) {
 		  #if PL_HAS_SHELL
 			SHELL_SendString("SW1 released!\r\n");
@@ -216,7 +224,6 @@ void HandleEvents(void){
 				  SHELL_SendString("Remote is now ON!\r\n");
 				#endif
 				}
-				
 		  #endif
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW7_RELEASED)) {
 		  #if PL_HAS_SHELL
@@ -231,7 +238,7 @@ static void APP_EventHandler(EVNT_Handle event) {
   switch(event) {
     case EVNT_INIT:
 #if PL_HAS_BUZZER
-    	  BUZ_Beep(500, 1000);
+    	//  BUZ_Beep(500, 1000);
 #endif
       LED1_On();
       WAIT1_Waitms(100);
@@ -334,7 +341,7 @@ static void APP_EventHandler(EVNT_Handle event) {
 
 #if PL_HAS_ACCEL_STOP
 static void APP_CheckAccelRobotStop(void) {
-	if((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
+	if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0) || (( US_GetLastCentimeterValue() > 6) && ( US_GetLastCentimeterValue() != 0)) ) {
 		#if PL_HAS_BUZZER
 			BUZ_Beep(800,100);
 		#endif
@@ -389,7 +396,7 @@ static void AppTask(void *pvParameters) {
 			#else
 				EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
 			#endif
-			EVNT_SetEvent(EVNT_BLINK_LED);
+			//EVNT_SetEvent(EVNT_BLINK_LED);
 		#endif
 
 		#if PL_HAS_KEYS && PL_NOF_KEYS>0
@@ -403,6 +410,10 @@ static void AppTask(void *pvParameters) {
 
 		#if PL_HAS_ACCEL_STOP
 			APP_CheckAccelRobotStop();
+		#endif
+
+		#if PL_HAS_KEYS && PL_NOF_KEYS>0
+			KEY_Scan(); /* scan keys */
 		#endif
 
 		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);

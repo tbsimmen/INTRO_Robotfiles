@@ -9,22 +9,22 @@
 
 #include "Platform.h"
 #if PL_HAS_RADIO
-#include "RNetConf.h"
-#if RNET_CONFIG_REMOTE_STDIO
-  #include "RStdIO.h"
-#endif
-#include "Application.h"
-#include "RNet_App.h"
-#include "Radio.h"
-#include "RStack.h"
-#include "RApp.h"
-#include "FRTOS1.h"
-#include "RPHY.h"
-#include "Shell.h"
-#include "Motor.h"
-#if PL_HAS_REMOTE
-  #include "Remote.h"
-#endif
+	#include "RNetConf.h"
+	#if RNET_CONFIG_REMOTE_STDIO
+	  #include "RStdIO.h"
+	#endif
+	#include "Application.h"
+	#include "RNet_App.h"
+	#include "Radio.h"
+	#include "RStack.h"
+	#include "RApp.h"
+	#include "FRTOS1.h"
+	#include "RPHY.h"
+	#include "Shell.h"
+	#include "Motor.h"
+	#if PL_HAS_REMOTE
+	  #include "Remote.h"
+	#endif
 
 static RNWK_ShortAddrType APP_dstAddr = RNWK_ADDR_BROADCAST; /* destination node address */
 
@@ -180,10 +180,10 @@ static uint8_t PrintStatus(const CLS1_StdIOType *io) {
 
 static void PrintHelp(const CLS1_StdIOType *io) {
   CLS1_SendHelpStr((unsigned char*)"app", (unsigned char*)"Group of application commands\r\n", io->stdOut);
-  CLS1_SendHelpStr((unsigned char*)"  help", (unsigned char*)"Shows radio help or status\r\n", io->stdOut);
+  CLS1_SendHelpStr((unsigned char*)" a help", (unsigned char*)"Shows radio help or status\r\n", io->stdOut);
   CLS1_SendHelpStr((unsigned char*)"  saddr 0x<addr>", (unsigned char*)"Set source node address\r\n", io->stdOut);
   CLS1_SendHelpStr((unsigned char*)"  daddr 0x<addr>", (unsigned char*)"Set destination node address\r\n", io->stdOut);
-  CLS1_SendHelpStr((unsigned char*)"  send val <val>", (unsigned char*)"Set a value to the destination node\r\n", io->stdOut);
+  CLS1_SendHelpStr((unsigned char*)"  send val <val>", (unsigned char*)"he value to the destination node\r\n", io->stdOut);
 #if RNET_CONFIG_REMOTE_STDIO
   CLS1_SendHelpStr((unsigned char*)"  send (in/out/err)", (unsigned char*)"Send a string to stdio using the wireless transceiver\r\n", io->stdOut);
 #endif

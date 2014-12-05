@@ -40,9 +40,9 @@ void TMR_OnInterrupt(void) {
   static int cntr=0;
 
   cntr++;
-  if (cntr==(1000/TMR_TICK_MS)) {
+  if (cntr==(500/TMR_TICK_MS)) {
 		#if 1 /* setting an event */
-	  	 // EVNT_SetEvent(EVNT_BLINK_LED);
+	  	  EVNT_SetEvent(EVNT_BLINK_LED);
 		#else /* toggling directly the LED */
 	  	  	  LED1_Neg();
 	  	  	  LED2_Neg();

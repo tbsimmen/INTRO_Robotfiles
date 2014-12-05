@@ -49,6 +49,9 @@ extern "C" {
 #if PL_HAS_ULTRASONIC
   #include "Ultrasonic.h"
 #endif
+
+#include "LED.h"
+
 /*
 ** ===================================================================
 **     Event       :  Cpu_OnNMIINT (module Events)
@@ -105,7 +108,9 @@ void SW1_OnInterrupt(void)
 #if PL_HAS_KBI
   if (KEY1_Get()) {
     KEY_OnInterrupt(KEY_BTN1);
+
   }
+  //LED2_Neg();
 #endif
 }
 

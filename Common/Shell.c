@@ -66,7 +66,9 @@
 #if PL_HAS_REMOTE
   #include "Remote.h"
 #endif
-
+#if PL_HAS_WATCHDOG
+  #include "Watchdog.h"
+#endif
 
 
 
@@ -243,6 +245,7 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #if CLS1_DEFAULT_SERIAL
   CLS1_ConstStdIOTypePtr ioLocal = CLS1_GetStdio();  
 #endif
+
 #if RNET_CONFIG_REMOTE_STDIO
   static unsigned char radio_cmd_buf[48];
   CLS1_ConstStdIOType *ioRemote = RSTDIO_GetStdioRx();
@@ -272,6 +275,10 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #if PL_HAS_BLUETOOTH
     (void)CLS1_ReadAndParseWithCommandTable(bluetooth_buf, sizeof(bluetooth_buf), &BT_stdio, CmdParserTable);
 #endif
+#if 0//RNET_CONFIG_REMOTE_STDIO
+    RSTDIO_Print(ioLocal); /* dispatch incoming messages */
+    (void)CLS1_ReadAndParseWithCommandTable(radio_cmd_buf, sizeof(radio_cmd_buf), ioRemote, CmdParserTable);
+#endif
 #if PL_HAS_SHELL_QUEUE
     {
       /*! \todo Handle shell queue */
@@ -285,6 +292,9 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
       }
     }
 #endif
+#if 0//PL_HAS_WATCHDOG
+    WDT_IncTaskCntr(WDT_TASK_ID_SHELL, 20);
+#endif
     FRTOS1_vTaskDelay(50/portTICK_RATE_MS);
   } /* for */
 }
@@ -295,7 +305,7 @@ void SHELL_Init(void) {
   (void)CLS1_SetStdio(&BT_stdio); /* use the Bluetooth stdio as default */
 #endif
 #if PL_HAS_RTOS
-  if (FRTOS1_xTaskCreate(ShellTask, "Shell", configMINIMAL_STACK_SIZE+150, NULL, tskIDLE_PRIORITY+1, NULL) != pdPASS) {
+  if (FRTOS1_xTaskCreate(ShellTask, "Shell", configMINIMAL_STACK_SIZE+100, NULL, tskIDLE_PRIORITY+1, NULL) != pdPASS) {
     for(;;){} /* error */
   }
 #endif

@@ -17,6 +17,8 @@
   #include "KeyDebounce.h"
 #endif
 
+#include "LED.h"
+
 void KEY_Scan(void) {
 #if PL_HAS_DEBOUNCE
   KEYDBNC_Process();

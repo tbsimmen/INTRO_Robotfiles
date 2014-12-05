@@ -38,6 +38,8 @@ void REF_Deinit(void);
  */
 void REF_Init(void);
 
+void REF_CalibrateStartStop(void);
+
 #endif /* PL_HAS_LINE_SENSOR */
 
 #endif /* REFLECTANCE_H_ */

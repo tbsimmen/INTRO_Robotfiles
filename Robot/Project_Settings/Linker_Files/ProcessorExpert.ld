@@ -10,7 +10,7 @@
 /*##                                   */
 /*##     Compiler  : GNU C Compiler    */
 /*##                                   */
-/*##     Date/Time : 2014-11-30, 12:35, # CodeGen: 48 */
+/*##     Date/Time : 2014-12-05, 11:43, # CodeGen: 75 */
 /*##                                   */
 /*##     Abstract  :                   */
 /*##                                   */
@@ -40,7 +40,7 @@ MEMORY {
   m_text      (RX) : ORIGIN = 0x00000410, LENGTH = 0x0007EBF0
   m_data      (RW) : ORIGIN = 0x1FFF8000, LENGTH = 0x00008000
   m_data_20000000 (RW) : ORIGIN = 0x20000000, LENGTH = 0x00008000
-  NVM_Config  (RX) : ORIGIN = 0x0007F000, LENGTH = 0x00001000
+  NVM_Config  (RX) : ORIGIN = 0x0007F000, LENGTH = 0x00000300
   m_cfmprotrom  (RX) : ORIGIN = 0x00000400, LENGTH = 0x00000010
 }
 

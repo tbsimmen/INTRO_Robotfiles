@@ -405,7 +405,7 @@ static void REF_StateMachine(void) {
 #else
       REF_MeasureRaw(SensorRaw);
 #endif
-      /*! \todo Add a new event to your event module...*/
+      /*! \TODO Add a new event to your event module...*/
       if (EVNT_EventIsSet(EVNT_REF_START_STOP_CALIBRATION)) {
         EVNT_ClearEvent(EVNT_REF_START_STOP_CALIBRATION);
         refState = REF_STATE_START_CALIBRATION;
