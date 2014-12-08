@@ -93,7 +93,11 @@ void MOT_SetDirection(MOT_MotorDevice *motor, MOT_Direction dir) {
   /*! Check if directions are working properly with your hardware */ //DONE!
 
 	if(motor == &motorL){
-		 dir = MOT_DIR_BACKWARD;
+		if(dir == MOT_DIR_BACKWARD){
+			dir = MOT_DIR_FORWARD;
+		}else{
+			dir = MOT_DIR_BACKWARD;
+		}
 	  }
 
  if (dir==MOT_DIR_BACKWARD) {

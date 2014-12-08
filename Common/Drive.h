@@ -28,6 +28,7 @@ uint8_t DRV_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_Std
  * \param enable TRUE to enable, FALSE otherwise.
  */
 void DRV_EnableDisable(bool enable);
+void DRV_PosEnableDisable(bool enable);
 
 /*!
  * \brief Sets the driving speed for left and right.
@@ -35,6 +36,7 @@ void DRV_EnableDisable(bool enable);
  * \param right Right wheel speed.
  */
 void DRV_SetSpeed(int32_t left, int32_t right);
+void DRV_SetPos(int32_t left, int32_t right);
 
 /*! \brief Driver initialization */
 void DRV_Init(void);

@@ -22,5 +22,6 @@ void APP_DebugPrint(unsigned char *str);
  */
 void APP_Start(void);
 
+void SumoInit(void);
 
 #endif /* APPLICATION_H_ */

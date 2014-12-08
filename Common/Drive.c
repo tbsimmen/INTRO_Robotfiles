@@ -10,6 +10,8 @@
 #include "Drive.h"
 #include "FRTOS1.h"
 #include "Pid.h"
+#include "Q4CLeft.h"
+#include "Q4CRight.h"
 #include "Tacho.h"
 #include "Motor.h"
 #include "Led.h"
@@ -18,15 +20,28 @@
 #endif
 
 static volatile bool DRV_SpeedOn = FALSE;
-static int32_t DRV_SpeedLeft, DRV_SpeedRight;
+static volatile bool DRV_PosOn = FALSE;
+
+static int32_t DRV_SpeedLeft, DRV_SpeedRight, DRV_PosLeft, DRV_PosRight;
+
 
 void DRV_EnableDisable(bool enable) {
   DRV_SpeedOn = enable;
 }
 
+void DRV_PosEnableDisable(bool enable) {
+  DRV_PosOn = enable;
+}
+
 void DRV_SetSpeed(int32_t left, int32_t right) {
   DRV_SpeedLeft = left;
   DRV_SpeedRight = right;
+}
+
+
+void DRV_SetPos(int32_t left, int32_t right) {
+  DRV_PosLeft = left;
+  DRV_PosRight = right;
 }
 
 static portTASK_FUNCTION(DriveTask, pvParameters) {
@@ -52,22 +67,13 @@ static portTASK_FUNCTION(DriveTask, pvParameters) {
       MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), 0);
       MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), 0);
       PID_Start(); /* reset values */
+    //} else if (DRV_PosOn){
+    //  PID_Pos(Q4CLeft_GetPos(), DRV_PosLeft, TRUE); /* left */
+    //  PID_Pos(Q4CRight_GetPos(), DRV_PosRight, FALSE); /* right */
     } else if (DRV_SpeedOn) {
-#if PL_HAS_RTOS_TRACE
-      if (DRV_SpeedLeft!=prevSpeedLeft) {
-        RTOSTRC1_uiTraceStart();
-        RTOSTRC1_vTracePrintF(usrEventChannel, "%d", currSpeed);
-        prevSpeedLeft = DRV_SpeedLeft;
-      }
-      currSpeed = TACHO_GetSpeed(TRUE);
-      if (currSpeed!=prevSpeed) { /* only log if changed */
-        RTOSTRC1_vTracePrintF(usrEventChannel, "%d", currSpeed);
-        prevSpeed = currSpeed;
-      }
-#endif
       PID_Speed(TACHO_GetSpeed(TRUE), DRV_SpeedLeft, TRUE); /* left */
       PID_Speed(TACHO_GetSpeed(FALSE), DRV_SpeedRight, FALSE); /* right */
-    }
+    }/* if */
     prevOn = DRV_SpeedOn;
     FRTOS1_vTaskDelay(2/portTICK_RATE_MS);
   } /* for */
@@ -140,8 +146,12 @@ void DRV_Deinit(void) {
 
 void DRV_Init(void) {
   DRV_EnableDisable(TRUE);
+  DRV_PosEnableDisable(FALSE);
   DRV_SpeedLeft = 0;
   DRV_SpeedRight = 0;
+  DRV_PosLeft = 0;
+  DRV_PosRight = 0;
+
   if (FRTOS1_xTaskCreate(
         DriveTask,  /* pointer to the task */
         "Drive", /* task name for kernel awareness debugging */

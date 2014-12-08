@@ -11,6 +11,7 @@
 #include "UTIL1.h"
 #if PL_HAS_SHELL
   #include "CLS1.h"
+#include "Shell.h"
 #endif
 #include "Reflectance.h"
 
@@ -30,6 +31,8 @@ static PID_Config posLeftConfig, posRightConfig;
 static int32_t PID(int32_t currVal, int32_t setVal, PID_Config *config) {
   int32_t error;
   int32_t pid;
+  unsigned char buf[48];
+   unsigned char kindBuf[16];
   
   /* perform PID closed control loop calculation */
   error = setVal-currVal; /* calculate error */
@@ -250,17 +253,17 @@ void PID_Init(void) {
   speedRightConfig.lastError = 0;
   speedRightConfig.integral = 0;
 
-
-  posLeftConfig.pFactor100 = 800;
-  posLeftConfig.iFactor100 = 50;
+  posLeftConfig.pFactor100 = 10;
+  posLeftConfig.iFactor100 = 10;
   posLeftConfig.dFactor100 = 0;
-  posLeftConfig.iAntiWindup = 50;
+  posLeftConfig.iAntiWindup = 10;
   posLeftConfig.lastError = 0;
   posLeftConfig.integral = 0;
-  posRightConfig.pFactor100 = 800;
-  posRightConfig.iFactor100 = 50;
+
+  posRightConfig.pFactor100 = 10;
+  posRightConfig.iFactor100 = 10;
   posRightConfig.dFactor100 = 0;
-  posRightConfig.iAntiWindup = 50;
+  posRightConfig.iAntiWindup = 10;
   posRightConfig.lastError = 0;
   posRightConfig.integral = 0;
 }

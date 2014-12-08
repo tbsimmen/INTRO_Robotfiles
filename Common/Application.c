@@ -47,6 +47,8 @@
 #endif
 #if PL_HAS_DRIVE
 #include "Drive.h"
+#include "Q4CLeft.h"
+#include "Q4CRight.h"
 #endif
 #if PL_HAS_ULTRASONIC
 #include "Ultrasonic.h"
@@ -58,6 +60,20 @@
   #include "Reflectance.h"
 #endif
 
+uint8_t buf[16];
+uint16_t cm, us, count;
+bool enemyfound= FALSE;
+static xSemaphoreHandle mutexAppHandle;
+
+typedef enum {
+  SUMO_STATE_INIT,
+  SUMO_STATE_HAUNTING,
+  SUMO_STATE_TURNING,
+  SUMO_STATE_SEARCHING,
+} SUMOStateType;
+
+static volatile SUMOStateType sumoState = SUMO_STATE_INIT; /* state machine state */
+
 
 
 void APP_DebugPrint(unsigned char *str) {
@@ -66,11 +82,10 @@ void APP_DebugPrint(unsigned char *str) {
 #endif
 }
 
-void SumoInit(void);
 
 
 #if 1
-void HandleEvents(void){
+	void HandleEvents(void){
 	if(EVNT_EventIsSetAutoClear(EVNT_INIT)){
 		#if PL_HAS_BUZZER
 				//  BUZ_Beep(800, 1000);
@@ -237,216 +252,344 @@ void HandleEvents(void){
 	#endif
 	  }
 }
-
 #else
-static void APP_EventHandler(EVNT_Handle event) {
-  switch(event) {
-    case EVNT_INIT:
-#if PL_HAS_BUZZER
-    	//  BUZ_Beep(500, 1000);
-#endif
-      LED1_On();
-      WAIT1_Waitms(100);
-      LED1_Off();
-      LED2_On();
-      WAIT1_Waitms(100);
-      LED2_Off();
-      LED3_On();
-      WAIT1_Waitms(100);
-      LED3_Off();
-      WAIT1_Waitms(200);
-      LED1_On();
-      LED2_On();
-      LED3_On();
-      WAIT1_Waitms(200);
-      LED1_Off();
-      LED2_Off();
-      LED3_Off();
-      break;
-    case EVENT_LED_HEARTBEAT:
-      LED2_Neg();
-      break;
-    case EVNT_BLINK_LED:
-    	LED1_Neg();
-    	break;
-#if PL_NOF_KEYS >= 1
-    case EVNT_SW1_PRESSED:
-      lastKeyPressed = 1;
-  #if PL_HAS_SHELL
-      SHELL_SendString("SW1 pressed!\r\n");
-  #endif
-  #if PL_HAS_BUZZER
-      BUZ_Beep(300, 500);
-  #endif
-      break;
-    case EVNT_SW1_LPRESSED:
-  #if PL_HAS_SHELL
-      SHELL_SendString("SW1 long pressed!\r\n");
-  #endif
-      break;
-    case EVNT_SW1_RELEASED:
-  #if PL_HAS_SHELL
-      SHELL_SendString("SW1 released!\r\n");
-  #endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 2
-    case EVNT_SW2_PRESSED:
-      lastKeyPressed = 2;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW2 pressed!\r\n");
-#endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 3
-    case EVNT_SW3_PRESSED:
-      lastKeyPressed = 3;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW3 pressed!\r\n");
-#endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 4
-    case EVNT_SW4_PRESSED:
-      lastKeyPressed = 4;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW4 pressed!\r\n");
-#endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 5
-    case EVNT_SW5_PRESSED:
-      lastKeyPressed = 5;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW5 pressed!\r\n");
-#endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 6
-    case EVNT_SW6_PRESSED:
-      lastKeyPressed = 6;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW6 pressed!\r\n");
-#endif
-      break;
-#endif
-#if PL_NOF_KEYS >= 7
-    case EVNT_SW7_PRESSED:
-      lastKeyPressed = 7;
-#if PL_HAS_SHELL
-      SHELL_SendString("SW7 pressed!\r\n");
-#endif
-      break;
-#endif
-    default:
-      break;
-  }
-}
+	static void APP_EventHandler(EVNT_Handle event) {
+		switch(event) {
+			case EVNT_INIT:
+				#if PL_HAS_BUZZER
+				//  BUZ_Beep(500, 1000);
+				#endif
+			  LED1_On();
+			  WAIT1_Waitms(100);
+			  LED1_Off();
+			  LED2_On();
+			  WAIT1_Waitms(100);
+			  LED2_Off();
+			  LED3_On();
+			  WAIT1_Waitms(100);
+			  LED3_Off();
+			  WAIT1_Waitms(200);
+			  LED1_On();
+			  LED2_On();
+			  LED3_On();
+			  WAIT1_Waitms(200);
+			  LED1_Off();
+			  LED2_Off();
+			  LED3_Off();
+			  break;
+			case EVENT_LED_HEARTBEAT:
+			  LED2_Neg();
+			  break;
+			case EVNT_BLINK_LED:
+				LED1_Neg();
+				break;
+		#if PL_NOF_KEYS >= 1
+			case EVNT_SW1_PRESSED:
+			  lastKeyPressed = 1;
+		  #if PL_HAS_SHELL
+			  SHELL_SendString("SW1 pressed!\r\n");
+		  #endif
+		  #if PL_HAS_BUZZER
+			  BUZ_Beep(300, 500);
+		  #endif
+			  break;
+			case EVNT_SW1_LPRESSED:
+		  #if PL_HAS_SHELL
+			  SHELL_SendString("SW1 long pressed!\r\n");
+		  #endif
+			  break;
+			case EVNT_SW1_RELEASED:
+		  #if PL_HAS_SHELL
+			  SHELL_SendString("SW1 released!\r\n");
+		  #endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 2
+			case EVNT_SW2_PRESSED:
+			  lastKeyPressed = 2;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW2 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 3
+			case EVNT_SW3_PRESSED:
+			  lastKeyPressed = 3;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW3 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 4
+			case EVNT_SW4_PRESSED:
+			  lastKeyPressed = 4;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW4 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 5
+			case EVNT_SW5_PRESSED:
+			  lastKeyPressed = 5;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW5 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 6
+			case EVNT_SW6_PRESSED:
+			  lastKeyPressed = 6;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW6 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+		#if PL_NOF_KEYS >= 7
+			case EVNT_SW7_PRESSED:
+			  lastKeyPressed = 7;
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW7 pressed!\r\n");
+		#endif
+			  break;
+		#endif
+			default:
+			  break;
+		  }
+		}
 #endif
 
 #if PL_HAS_ACCEL_STOP
-static void APP_CheckAccelRobotStop(void) {
-	if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0)) {
-		#if PL_HAS_BUZZER
-			BUZ_Beep(800,100);
-		#endif
-		#if PL_HAS_DRIVE
-			DRV_EnableDisable(FALSE);
-		#endif
-		#if PL_HAS_LED
-			#if PL_IS_FRDM
-				//LED3_On();
-				//LED2_On();
-			#else
-				// LED2_On();
+	static void APP_CheckAccelRobotStop(void) {
+		if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0)) {
+			#if PL_HAS_BUZZER
+				BUZ_Beep(800,100);
 			#endif
-		#endif
+			#if PL_HAS_DRIVE
+				DRV_EnableDisable(FALSE);
+			#endif
+			#if PL_HAS_LED
+				#if PL_IS_FRDM
+					//LED3_On();
+					//LED2_On();
+				#else
+					// LED2_On();
+				#endif
+			#endif
 
-	}else{
-		#if PL_HAS_DRIVE
-		 	DRV_EnableDisable(TRUE);
-		#endif
-		#if PL_HAS_LED
-			#if PL_IS_FRDM
-				//LED3_Off();
-				//LED2_Off();
-			#else
-			//	LED2_Off();
+		}else{
+			#if PL_HAS_DRIVE
+				DRV_EnableDisable(TRUE);
 			#endif
-		#endif
+			#if PL_HAS_LED
+				#if PL_IS_FRDM
+					//LED3_Off();
+					//LED2_Off();
+				#else
+				//	LED2_Off();
+				#endif
+			#endif
+		}
 	}
-}
 #endif
 
 #if PL_HAS_RTOS
+	static void AppTask(void *pvParameters) {
+		(void)pvParameters; /* not used */
+		#if PL_HAS_SHELL
+			//CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
+		#endif
 
+	  //ACCEL verwendet I2C. I2C verwendet interrupts. Diese sind bei'Normalen'
+	  //Init noch nicht eingeschaltet. Darum hier Initialisieren.
+		#if PL_HAS_ACCEL /* need to initialize accelerometer from a task (interrupts enabled). */
+			ACCEL_LowLevelInit();
+		#endif
 
-
-static void AppTask(void *pvParameters) {
-	(void)pvParameters; /* not used */
-	#if PL_HAS_SHELL
-		//CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
-	#endif
-
-  //ACCEL verwendet I2C. I2C verwendet interrupts. Diese sind bei'Normalen'
-  //Init noch nicht eingeschaltet. Darum hier Initialisieren.
-	#if PL_HAS_ACCEL /* need to initialize accelerometer from a task (interrupts enabled). */
-		ACCEL_LowLevelInit();
-	#endif
-
-	for(;;) {
-		#if PL_HAS_EVENTS
-			#if 1
-				HandleEvents();
-			#else
-				EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+		for(;;) {
+			#if PL_HAS_EVENTS
+				#if 1
+					HandleEvents();
+				#else
+					EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+				#endif
+				//EVNT_SetEvent(EVNT_BLINK_LED);
 			#endif
-			//EVNT_SetEvent(EVNT_BLINK_LED);
-		#endif
 
-		#if PL_HAS_KEYS && PL_NOF_KEYS>0
-			KEY_Scan(); /* scan keys */
-		#endif
+			#if PL_HAS_KEYS && PL_NOF_KEYS>0
+				KEY_Scan(); /* scan keys */
+			#endif
 
-		#if PL_HAS_MEALY
-			MEALY_Step();
-		#endif
+			#if PL_HAS_MEALY
+				MEALY_Step();
+			#endif
 
 
-		#if PL_HAS_ACCEL_STOP
-			APP_CheckAccelRobotStop();
-		#endif
+			#if PL_HAS_ACCEL_STOP
+			//	APP_CheckAccelRobotStop();
+			#endif
 
-		#if PL_HAS_KEYS && PL_NOF_KEYS>0
-			KEY_Scan(); /* scan keys */
-		#endif
+			#if PL_HAS_KEYS && PL_NOF_KEYS>0
+				KEY_Scan(); /* scan keys */
+			#endif
 
-		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
-  }
-}
+			FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+	  }
+	}
 #else
+	static void APP_Loop(void) {
+	  int i;
+
+	#if PL_HAS_SHELL
+	  CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
+	#endif
+	  for(;;) {
+	#if PL_HAS_EVENTS
+		EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
+	#endif
+	#if PL_HAS_KEYS && PL_NOF_KEYS>0
+		KEY_Scan(); /* scan keys */
+	#endif
+	#if PL_HAS_MEALY
+		MEALY_Step();
+	#endif
+		WAIT1_Waitms(100);
+	  }
+	}
+#endif
 
 
-static void APP_Loop(void) {
-  int i;
+/* SUMO FIGHT IMPLEMENTATION */
+/*-----------------------------------------*/
 
-#if PL_HAS_SHELL
-  CLS1_SendStr("Hello World!\r\n", CLS1_GetStdio()->stdOut);
-#endif
-  for(;;) {
-#if PL_HAS_EVENTS
-    EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
-#endif
-#if PL_HAS_KEYS && PL_NOF_KEYS>0
-    KEY_Scan(); /* scan keys */
-#endif
-#if PL_HAS_MEALY
-    MEALY_Step();
-#endif
-    WAIT1_Waitms(100);
+static portTASK_FUNCTION(SumoTask, pvParameters) {
+  (void)pvParameters; /* parameter not used */
+
+
+  uint16_t dist;
+  int i=0;
+  int iter = 0;
+  bool STOP;
+
+ for(;;){
+
+	  switch (sumoState) {
+		   case SUMO_STATE_INIT:
+			 DRV_EnableDisable(TRUE);
+
+			 FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
+
+			 if(enemyfound == TRUE){ //Objekt erkannt
+				 sumoState = SUMO_STATE_HAUNTING;
+			 }else{
+				 sumoState = SUMO_STATE_SEARCHING;
+			 }
+			 break;
+
+		   case SUMO_STATE_HAUNTING:
+			   DRV_SetSpeed(3000,3000);
+			   for(i=0;i<6;i++) {  	//nicht runterfallen!
+					 if(SensorValue(i) < 500){
+						DRV_SetSpeed(0,0);
+						sumoState = SUMO_STATE_TURNING;
+						break;
+					 }
+			   }
+
+			   break;
+
+		   case SUMO_STATE_TURNING:
+
+				DRV_SetSpeed(-3000,-3000);
+				FRTOS1_vTaskDelay(500/portTICK_RATE_MS);
+				DRV_SetSpeed(0,0);
+
+				sumoState = SUMO_STATE_SEARCHING;
+
+
+			 break;
+
+		   case SUMO_STATE_SEARCHING:
+
+			   DRV_SetSpeed(-2000,2000);
+
+			   if(enemyfound == TRUE) {
+				   BUZ_Beep(900,80);
+
+				   sumoState = SUMO_STATE_HAUNTING;
+			   }else{
+				   for(i=0;i<6;i++) {  	//nicht runterfallen!
+					   if(SensorValue(i) < 500){
+						   DRV_SetSpeed(0,0);
+						   sumoState = SUMO_STATE_TURNING;
+						   break;
+					   }
+				 	}
+				  }
+			 break;
+		}/*switch*/
+	  FRTOS1_vTaskDelay(61/portTICK_RATE_MS);
   }
+
+	  //FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
+
 }
+
+
+void SumoInit(void){
+
+#if 1
+	if (FRTOS1_xTaskCreate(
+			 SumoTask,
+			 "SumoRob",
+			 configMINIMAL_STACK_SIZE,
+			 (void*)NULL,
+			 tskIDLE_PRIORITY,
+			 (xTaskHandle*)NULL
+			 ) != pdPASS) {
+		 	 for(;;){} /* error */
+		}
 #endif
+
+}
+
+static portTASK_FUNCTION(USMeasureTask, pvParameters) {
+(void)pvParameters; /* parameter not used */
+	int count[5];
+	int i,p,mean;
+
+#if 1
+	for(;;){
+
+		if(i<5){
+			i = i + 1;
+		}else{
+			i = 0;
+		}
+
+		us = US_Measure_us();
+		cm = US_usToCentimeters(us, 22);
+
+		if(((cm > 2) && (cm != 0) && (cm < 50))) {
+			count[i] = 1;
+		}else{
+			count[i] = 0;
+		}
+
+		mean = 0;
+		for(p=0;p<5;p++){
+			mean = mean + count[p];
+		}
+
+		if(mean > 3){
+			enemyfound = TRUE;
+		}else{
+			enemyfound = FALSE;
+		}
+
+		FRTOS1_vTaskDelay(31/portTICK_RATE_MS);
+	}
+#endif
+}
 
 void APP_Start(void) {
 	#if PL_HAS_RTOS_TRACE
@@ -467,6 +610,10 @@ void APP_Start(void) {
 	 		 for(;;){} /* error */
 	 	 }
 
+	 	 if (FRTOS1_xTaskCreate(USMeasureTask, "USMeasure", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, NULL) != pdPASS) {
+	 		 		 for(;;){} /* error */
+	 		 	 }
+
 	 	 RTOS_Run();
 
 	#else
@@ -474,85 +621,26 @@ void APP_Start(void) {
 	#endif
 
 
-#if 0
-  for(;;) {
-	#if PL_HAS_MEALY
-		MEALY_Step();
-	#else
-		LED1_On();
-		WAIT1_Waitms(300);
-		LED1_Off();
-		LED2_On();
-		WAIT1_Waitms(300);
-		LED2_Off();
-		LED3_On();
-		WAIT1_Waitms(300);
-		LED3_Off();
+	#if 0
+	  for(;;) {
+		#if PL_HAS_MEALY
+			MEALY_Step();
+		#else
+			LED1_On();
+			WAIT1_Waitms(300);
+			LED1_Off();
+			LED2_On();
+			WAIT1_Waitms(300);
+			LED2_Off();
+			LED3_On();
+			WAIT1_Waitms(300);
+			LED3_Off();
+		#endif
+		  }
 	#endif
-	  }
-#endif
 
   /* just in case we leave the main application loop */
   PL_Deinit();
 }
-
-
-
-static portTASK_FUNCTION(SumoTask, pvParameters) {
-  (void)pvParameters; /* parameter not used */
-  uint8_t buf[16];
-  uint16_t cm, us;
-
-  //FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
-#if 0
-	for(;;){
-		us = US_Measure_us();
-		cm = US_usToCentimeters(us, 22);
-
-		if(( cm > 6) && ( cm != 0)){ //Objekt erkannt
-			BUZ_Beep(400,51);
-		}
-		FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
-	}
-#endif
-
-#if 1
-	DRV_SetSpeed(1000, 1000);
-
-	for(;;){
-
-		int i;
-	//static SensorTimeType SensorCalibrated[REF_NOF_SENSORS]; /* 0 means white/min value, 1000 means black/max value */
-		 for(i=0;i<6;i++) {
-			 if(SensorValue(i) < 500){
-				 DRV_SetSpeed(0,0);
-			 }
-		 }
-
-		FRTOS1_vTaskDelay(103/portTICK_RATE_MS);
-	}
-#endif
-}
-
-void SumoInit(void){
-
-	DRV_EnableDisable(FALSE);
-
-#if 1
-	if (FRTOS1_xTaskCreate(
-			 SumoTask,
-			 "SumoRob",
-			 configMINIMAL_STACK_SIZE,
-			 (void*)NULL,
-			 tskIDLE_PRIORITY+2,
-			 (xTaskHandle*)NULL
-			 ) != pdPASS) {
-		 	 for(;;){} /* error */
-		}
-#endif
-
-}
-
-
 
 
