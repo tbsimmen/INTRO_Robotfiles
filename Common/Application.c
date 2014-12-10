@@ -235,6 +235,10 @@ void APP_DebugPrint(unsigned char *str) {
 		  #if PL_HAS_BUZZER
 			BUZ_Beep(300, 500);
 		  #endif
+			#if PL_IS_FRDM
+				(void)RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN,"buzzer buz 800 400\r\n",	sizeof("buzzer buz 800 400\r\n")-1);
+			#endif
+
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW7_LPRESSED)) {
 		  #if PL_HAS_SHELL
 			SHELL_SendString("SW7 long pressed!\r\n");
@@ -374,8 +378,8 @@ void APP_DebugPrint(unsigned char *str) {
 			if(acount >= 2){
 				acount = 0;
 				#if PL_HAS_BUZZER
-					//BUZ_Beep(400,50);
-					LED2_On();
+					BUZ_Beep(400,50);
+					//LED2_On();
 				#endif
 				#if PL_HAS_DRIVE
 					DRV_EnableDisable(FALSE);
@@ -630,11 +634,13 @@ void APP_Start(void) {
 	  }
 	#endif
 
- 	PL_Init(); /* platform initialization */
+
+	PL_Init(); /* platform initialization */
 	EVNT_SetEvent(EVNT_INIT); /* set initial event */
 
+
 	#if PL_HAS_RTOS
-			 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
+			 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+1, NULL) != pdPASS) {
 				 for(;;){} /* error */
 			 }
 
@@ -647,6 +653,9 @@ void APP_Start(void) {
 				for(;;){} /* error */
 			}
 		#endif
+
+
+
 		RTOS_Run();
 	#else
 	 	 APP_Loop();

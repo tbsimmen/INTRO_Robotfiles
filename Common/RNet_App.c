@@ -24,7 +24,7 @@
 	#include "Motor.h"
 	#if PL_HAS_REMOTE
 	  #include "Remote.h"
-	#endif
+#endif
 
 static RNWK_ShortAddrType APP_dstAddr = RNWK_ADDR_BROADCAST; /* destination node address */
 
@@ -40,7 +40,7 @@ RNWK_ShortAddrType RNETA_GetDestAddr(void) {
   return APP_dstAddr;
 }
 
-static uint8_t HandleDataRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *data, RNWK_ShortAddrType srcAddr, bool *handled, RPHY_PacketDesc *packet) {
+uint8_t HandleDataRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *data, RNWK_ShortAddrType srcAddr, bool *handled, RPHY_PacketDesc *packet) {
 
 	#if PL_HAS_SHELL
 	  uint8_t buf[32];
@@ -81,7 +81,7 @@ static const RAPP_MsgHandler handlerTable[] =
 #endif
   HandleDataRxMessage,
 #if PL_HAS_REMOTE
-  REMOTE_HandleRemoteRXMessage,
+  REMOTE_HandleRemoteRxMessage,
 #endif
   NULL /* sentinel */
 };

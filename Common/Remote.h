@@ -13,8 +13,12 @@
 #include "RApp.h"
 #include "RNWK.h"
 #include "RPHY.h"
+#include "stdint.h"
+
+
 
 uint8_t REMOTE_HandleRemoteRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *data, RNWK_ShortAddrType srcAddr, bool *handled, RPHY_PacketDesc *packet);
+static uint8_t APP_GetXY(uint16_t *x, uint16_t *y, int8_t *x8, int8_t *y8);
 
 /*!
  * \brief Function to find out if the remote controller is enabled or not.
@@ -42,6 +46,9 @@ void REMOTE_Deinit(void);
 
 /*! \brief Initialization of the module */
 void REMOTE_Init(void);
+
+
+
 
 #endif /* PL_REMOTE */
 

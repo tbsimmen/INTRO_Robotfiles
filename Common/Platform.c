@@ -70,6 +70,18 @@
 #if PL_HAS_ULTRASONIC
   #include "Ultrasonic.h"
 #endif
+#if PL_HAS_ACCEL
+  #include "Accel.h"
+#endif
+#if PL_HAS_RADIO
+  #include "RNet_App.h"
+#endif
+#if PL_HAS_REMOTE
+  #include "Remote.h"
+#endif
+#if PL_HAS_WATCHDOG
+  #include "Watchdog.h"
+#endif
 
 void PL_Init(void) {
 #if PL_HAS_LED
@@ -130,9 +142,35 @@ void PL_Init(void) {
 #if PL_HAS_ULTRASONIC
   US_Init();
 #endif
+#if PL_HAS_RADIO
+  RNETA_Init();
+#endif
+#if PL_HAS_ACCEL
+  ACCEL_Init();
+#endif
+#if PL_HAS_REMOTE
+  REMOTE_Init();
+#endif
+#if PL_HAS_WATCHDOG
+  WDT_Init();
+#endif
 }
 
+
+
 void PL_Deinit(void) {
+#if PL_HAS_WATCHDOG
+  WDT_Deinit();
+#endif
+#if PL_HAS_REMOTE
+  REMOTE_Deinit();
+#endif
+#if PL_HAS_ACCEL
+  ACCEL_Deinit();
+#endif
+#if PL_HAS_RADIO
+  RNETA_Deinit();
+#endif
 #if PL_HAS_ULTRASONIC
   US_Deinit();
 #endif

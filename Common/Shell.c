@@ -293,7 +293,7 @@ static portTASK_FUNCTION(ShellTask, pvParameters) {
 #if PL_HAS_BLUETOOTH
     (void)CLS1_ReadAndParseWithCommandTable(bluetooth_buf, sizeof(bluetooth_buf), &BT_stdio, CmdParserTable);
 #endif
-#if 0//RNET_CONFIG_REMOTE_STDIO
+#if RNET_CONFIG_REMOTE_STDIO
     RSTDIO_Print(ioLocal); /* dispatch incoming messages */
     (void)CLS1_ReadAndParseWithCommandTable(radio_cmd_buf, sizeof(radio_cmd_buf), ioRemote, CmdParserTable);
 #endif
