@@ -11,7 +11,7 @@
 #define __RNET_APP_CONFIG__
 
 #include "Platform.h"
-#if PL_HAS_RADIO
+#if 1 //PL_HAS_RADIO
 
 /*! type ID's for application messages */
 typedef enum {

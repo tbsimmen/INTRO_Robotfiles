@@ -142,6 +142,24 @@ static const CLS1_ParseCommandCallback CmdParserTable[] =
 
 static uint32_t SHELL_val; /* used as demo value for shell */
 
+#if PL_HAS_WATCHDOG
+static TickType_t ticksBeforeCmd;
+#endif
+
+void SHELL_OnBeforeIterateCmd(const uint8_t *cmd) {
+  (void)cmd; /* not used */
+#if PL_HAS_WATCHDOG
+  ticksBeforeCmd = FRTOS1_xTaskGetTickCount();
+#endif
+}
+
+void SHELL_OnAfterIterateCmd(const uint8_t *cmd) {
+  (void)cmd; /* not used */
+#if PL_HAS_WATCHDOG
+  WDT_IncTaskCntr(WDT_TASK_ID_SHELL, (FRTOS1_xTaskGetTickCount()-ticksBeforeCmd)/portTICK_RATE_MS); /* count for output to console */
+#endif
+}
+
 void SHELL_SendString(unsigned char *msg) {
 #if PL_HAS_SHELL_QUEUE
   /*! \todo Implement function using queues */

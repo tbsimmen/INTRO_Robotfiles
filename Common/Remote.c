@@ -12,6 +12,7 @@
 #include "FRTOS1.h"
 #include "CLS1.h"
 #include "UTIL1.h"
+#include "Shell.h"
 #if PL_HAS_ACCEL
   #include "Accel.h"
 #endif
@@ -34,15 +35,33 @@
 #if PL_HAS_JOYSTICK
   #include "AD1.h"
 #endif
+#if PL_HAS_WATCHDOG
+  #include "Watchdog.h"
+#endif
 
 static bool REMOTE_isOn = FALSE;
 static bool REMOTE_isVerbose = FALSE;
+static bool REMOTE_useJoystick = TRUE;
+static bool REMOTE_useAccelerometer = TRUE;
+#if PL_HAS_JOYSTICK
+static uint16_t midPointX, midPointY;
+#endif
 
 #if PL_APP_ACCEL_CONTROL_SENDER
-static int8_t ToSigned8Bit(uint16_t val) {
-  int tmp;
+static int8_t ToSigned8Bit(uint16_t val, bool isX) {
+  int32_t tmp;
 
-  tmp = ((int)((val>>8)&0xFF))-127;
+  if (isX) {
+    tmp = (int32_t)val-midPointX;
+  } else {
+    tmp = (int32_t)val-midPointY;
+  }
+  if (tmp>0) {
+    tmp = (tmp*128)/0x7fff;
+  } else {
+    tmp = (-tmp*128)/0x7fff;
+    tmp = -tmp;
+  }
   if (tmp<-128) {
     tmp = -128;
   } else if (tmp>127) {
@@ -63,69 +82,122 @@ static uint8_t APP_GetXY(uint16_t *x, uint16_t *y, int8_t *x8, int8_t *y8) {
   if (res!=ERR_OK) {
     return res;
   }
-  *x = values[0];
-  *y = values[1];
+  if (x!=NULL) {
+    *x = values[0];
+  }
+  if (y!=NULL) {
+    *y = values[1];
+  }
   /* transform into -128...127 with zero as mid position */
-  *x8 = ToSigned8Bit(values[0]);
-  *y8 = ToSigned8Bit(values[1]);
+  if (x8!=NULL) {
+    *x8 = ToSigned8Bit(values[0], TRUE);
+  }
+  if (y8!=NULL) {
+    *y8 = ToSigned8Bit(values[1], FALSE);
+  }
   return ERR_OK;
 }
 
 static portTASK_FUNCTION(RemoteTask, pvParameters) {
+#if PL_HAS_WATCHDOG
+  int i;
+#endif
+
   (void)pvParameters;
+#if PL_HAS_JOYSTICK
+  (void)APP_GetXY(&midPointX, &midPointY, NULL, NULL);
+#endif
   for(;;) {
     if (REMOTE_isOn) {
 #if PL_HAS_ACCEL
-      uint8_t buf[6];
-      int16_t x, y, z;
+      if (REMOTE_useAccelerometer) {
+        uint8_t buf[6];
+        int16_t x, y, z;
 
-      /* send periodically accelerometer messages */
-      ACCEL_GetValues(&x, &y, &z);
-      buf[0] = (uint8_t)(x&0xFF);
-      buf[1] = (uint8_t)(x>>8);
-      buf[2] = (uint8_t)(y&0xFF);
-      buf[3] = (uint8_t)(y>>8);
-      buf[4] = (uint8_t)(z&0xFF);
-      buf[5] = (uint8_t)(z>>8);
-      if (REMOTE_isVerbose) {
-        uint8_t txtBuf[16];
-        CLS1_ConstStdIOTypePtr io = CLS1_GetStdio();
+        /* send periodically accelerometer messages */
+        ACCEL_GetValues(&x, &y, &z);
+        buf[0] = (uint8_t)(x&0xFF);
+        buf[1] = (uint8_t)(x>>8);
+        buf[2] = (uint8_t)(y&0xFF);
+        buf[3] = (uint8_t)(y>>8);
+        buf[4] = (uint8_t)(z&0xFF);
+        buf[5] = (uint8_t)(z>>8);
+        if (REMOTE_isVerbose) {
+          uint8_t txtBuf[48];
 
-        CLS1_SendStr((unsigned char*)"TX: x: ", io->stdOut);
-        CLS1_SendNum16s(x, io->stdOut);
-        CLS1_SendStr((unsigned char*)" y: ", io->stdOut);
-        CLS1_SendNum16s(y, io->stdOut);
-        CLS1_SendStr((unsigned char*)" z: ", io->stdOut);
-        CLS1_SendNum16s(z, io->stdOut);
-        CLS1_SendStr((unsigned char*)" to addr 0x", io->stdOut);
-        txtBuf[0] = '\0';
-  #if RNWK_SHORT_ADDR_SIZE==1
-        UTIL1_strcatNum8Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
-  #else
-        UTIL1_strcatNum16Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
-  #endif
-        UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)"\r\n");
-        CLS1_SendStr(txtBuf, io->stdOut);
+          UTIL1_strcpy(txtBuf, sizeof(txtBuf), (unsigned char*)"TX: x: ");
+          UTIL1_strcatNum16s(txtBuf, sizeof(txtBuf), x);
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)" y: ");
+          UTIL1_strcatNum16s(txtBuf, sizeof(txtBuf), y);
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)" z: ");
+          UTIL1_strcatNum16s(txtBuf, sizeof(txtBuf), z);
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)" to addr 0x");
+    #if RNWK_SHORT_ADDR_SIZE==1
+          UTIL1_strcatNum8Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
+    #else
+          UTIL1_strcatNum16Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
+    #endif
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)"\r\n");
+          SHELL_SendString(txtBuf);
+        }
+        (void)RAPP_SendPayloadDataBlock(buf, sizeof(buf), RAPP_MSG_TYPE_ACCEL, RNETA_GetDestAddr(), RPHY_PACKET_FLAGS_REQ_ACK);
+        LED1_Neg();
       }
-      (void)RAPP_SendPayloadDataBlock(buf, sizeof(buf), RAPP_MSG_TYPE_ACCEL, RNETA_GetDestAddr(), RPHY_PACKET_FLAGS_REQ_ACK);
-      LED1_Neg();
+#endif
+#if PL_HAS_JOYSTICK
+      if (REMOTE_useJoystick) {
+        uint8_t buf[2];
+        int16_t x, y;
+        int8_t x8, y8;
+
+        /* send periodically accelerometer messages */
+        APP_GetXY(&x, &y, &x8, &y8);
+        buf[0] = x8;
+        buf[1] = y8;
+        if (REMOTE_isVerbose) {
+          uint8_t txtBuf[48];
+
+          UTIL1_strcpy(txtBuf, sizeof(txtBuf), (unsigned char*)"TX: x: ");
+          UTIL1_strcatNum8s(txtBuf, sizeof(txtBuf), x8);
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)" y: ");
+          UTIL1_strcatNum8s(txtBuf, sizeof(txtBuf), y8);
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)" to addr 0x");
+    #if RNWK_SHORT_ADDR_SIZE==1
+          UTIL1_strcatNum8Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
+    #else
+          UTIL1_strcatNum16Hex(txtBuf, sizeof(txtBuf), RNETA_GetDestAddr());
+    #endif
+          UTIL1_strcat(txtBuf, sizeof(txtBuf), (unsigned char*)"\r\n");
+          SHELL_SendString(txtBuf);
+        }
+        (void)RAPP_SendPayloadDataBlock(buf, sizeof(buf), RAPP_MSG_TYPE_JOYSTICK_XY, RNETA_GetDestAddr(), RPHY_PACKET_FLAGS_REQ_ACK);
+        LED1_Neg();
+      }
 #endif
 #if PL_HAS_WATCHDOG
-      WDT_IncTaskCntr(WDT_TASK_ID_REMOTE, 200);
-#endif
+      for(i=0;i<2;i++) { /* do it in smaller steps */
+        WDT_IncTaskCntr(WDT_TASK_ID_REMOTE, 100);
+        FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+      }
+#else
       FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
+#endif
     } else {
 #if PL_HAS_WATCHDOG
-      WDT_IncTaskCntr(WDT_TASK_ID_REMOTE, 1000);
-#endif
+      for(i=0;i<10;i++) { /* do it in smaller steps */
+        WDT_IncTaskCntr(WDT_TASK_ID_REMOTE, 100);
+        FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+      }
+#else
       FRTOS1_vTaskDelay(1000/portTICK_RATE_MS);
+#endif
     }
   } /* for */
 }
 #endif
 
 #if PL_HAS_MOTOR
-static void REMOTE_HandleMsg(int16_t x, int16_t y, int16_t z) {
+static void REMOTE_HandleMotorMsg(int16_t speedVal, int16_t directionVal, int16_t z) {
   #define SCALE_DOWN 30
   #define MIN_VALUE  250 /* values below this value are ignored */
   #define DRIVE_DOWN 1
@@ -133,30 +205,30 @@ static void REMOTE_HandleMsg(int16_t x, int16_t y, int16_t z) {
   if (!REMOTE_isOn) {
     return;
   }
-  if (y>950 || y<-950) { /* have a way to stop motor: turn SRB USB port side up or down */
+  if (z<-900) { /* have a way to stop motor: turn FRDM USB port side up or down */
 #if PL_HAS_DRIVE
     DRV_SetSpeed(0, 0);
 #else
     MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), 0);
     MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), 0);
 #endif
-  } else if ((y>MIN_VALUE || y<-MIN_VALUE) && (x>MIN_VALUE || x<-MIN_VALUE)) { /* x: speed, y: direction */
+  } else if ((directionVal>MIN_VALUE || directionVal<-MIN_VALUE) && (speedVal>MIN_VALUE || speedVal<-MIN_VALUE)) {
     int16_t speed, speedL, speedR;
     
-    speed = x/SCALE_DOWN;
-    if (y<0) {
+    speed = speedVal/SCALE_DOWN;
+    if (directionVal<0) {
       if (speed<0) {
-        speedR = speed+(y/SCALE_DOWN);
+        speedR = speed+(directionVal/SCALE_DOWN);
       } else {
-        speedR = speed-(y/SCALE_DOWN);
+        speedR = speed-(directionVal/SCALE_DOWN);
       }
       speedL = speed;
     } else {
       speedR = speed;
       if (speed<0) {
-        speedL = speed-(y/SCALE_DOWN);
+        speedL = speed-(directionVal/SCALE_DOWN);
       } else {
-        speedL = speed+(y/SCALE_DOWN);
+        speedL = speed+(directionVal/SCALE_DOWN);
       }
     }
 #if PL_HAS_DRIVE
@@ -165,19 +237,19 @@ static void REMOTE_HandleMsg(int16_t x, int16_t y, int16_t z) {
     MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), speedL);
     MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), speedR);
 #endif
-  } else if (x>100 || x<-100) { /* speed */
+  } else if (speedVal>100 || speedVal<-100) { /* speed */
 #if PL_HAS_DRIVE
-    DRV_SetSpeed(-x, -x);
+    DRV_SetSpeed(speedVal, speedVal);
 #else
-    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), -x/SCALE_DOWN);
-    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), -x/SCALE_DOWN);
+    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), -speedVal/SCALE_DOWN);
+    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), -speedVal/SCALE_DOWN);
 #endif
-  } else if (y>100 || y<-100) { /* direction */
+  } else if (directionVal>100 || directionVal<-100) { /* direction */
 #if PL_HAS_DRIVE
-    DRV_SetSpeed(-y/DRIVE_DOWN, y/DRIVE_DOWN);
+    DRV_SetSpeed(directionVal/DRIVE_DOWN, -directionVal/DRIVE_DOWN);
 #else
-    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), -y/SCALE_DOWN);
-    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), (y/SCALE_DOWN));
+    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_LEFT), -directionVal/SCALE_DOWN);
+    MOT_SetSpeedPercent(MOT_GetMotorHandle(MOT_MOTOR_RIGHT), (directionVAl/SCALE_DOWN));
 #endif
   } else { /* device flat on the table? */
 #if PL_HAS_DRIVE
@@ -190,60 +262,155 @@ static void REMOTE_HandleMsg(int16_t x, int16_t y, int16_t z) {
 }
 #endif
 
+#if PL_HAS_MOTOR
+static int16_t scaleJoystickTo1K(int8_t val) {
+  /* map speed from -128...127 to -1000...+1000 */
+  int tmp;
+
+  if (val>0) {
+    tmp = ((val*10)/127)*100;
+  } else {
+    tmp = ((val*10)/128)*100;
+  }
+  if (tmp<-1000) {
+    tmp = -1000;
+  } else if (tmp>1000) {
+    tmp = 1000;
+  }
+  return tmp;
+}
+#endif
+
 uint8_t REMOTE_HandleRemoteRxMessage(RAPP_MSG_Type type, uint8_t size, uint8_t *data, RNWK_ShortAddrType srcAddr, bool *handled, RPHY_PacketDesc *packet) {
 #if PL_HAS_SHELL
-  uint8_t buf[16];
-  CLS1_ConstStdIOTypePtr io = CLS1_GetStdio();
+  uint8_t buf[48];
 #endif
   int16_t x, y, z;
   
   (void)size;
   (void)packet;
   switch(type) {
-    case RAPP_MSG_TYPE_ACCEL: /* Rx of message, <type><size><data */
+#if PL_HAS_MOTOR
+    case RAPP_MSG_TYPE_ACCEL: /* Rx of message, <type><size><data> where data is x,y,z (each 16bit) */
       *handled = TRUE;
       /* get data value */
       x = (data[0])|(data[1]<<8);
       y = (data[2])|(data[3]<<8);
       z = (data[4])|(data[5]<<8);
       if (REMOTE_isVerbose) {
-        CLS1_SendStr((unsigned char*)"RX: x: ", io->stdOut);
-        CLS1_SendNum16s(x, io->stdOut);
-        CLS1_SendStr((unsigned char*)" y: ", io->stdOut);
-        CLS1_SendNum16s(y, io->stdOut);
-        CLS1_SendStr((unsigned char*)" z: ", io->stdOut);
-        CLS1_SendNum16s(z, io->stdOut);
-        CLS1_SendStr((unsigned char*)" from addr 0x", io->stdOut);
-        buf[0] = '\0';
+        UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"RX: x: ");
+        UTIL1_strcatNum16s(buf, sizeof(buf), x);
+        UTIL1_strcat(buf, sizeof(buf), (unsigned char*)" y: ");
+        UTIL1_strcatNum16s(buf, sizeof(buf), y);
+        UTIL1_strcat(buf, sizeof(buf), (unsigned char*)" z: ");
+        UTIL1_strcatNum16s(buf, sizeof(buf), z);
+        UTIL1_strcat(buf, sizeof(buf), (unsigned char*)" from addr 0x");
   #if RNWK_SHORT_ADDR_SIZE==1
         UTIL1_strcatNum8Hex(buf, sizeof(buf), srcAddr);
   #else
         UTIL1_strcatNum16Hex(buf, sizeof(buf), srcAddr);
   #endif
         UTIL1_strcat(buf, sizeof(buf), (unsigned char*)"\r\n");
-        CLS1_SendStr(buf, io->stdOut);
+        SHELL_SendString(buf);
       }
 #if PL_HAS_MOTOR
-      REMOTE_HandleMsg(x, y, z);
+      if (REMOTE_useAccelerometer) {
+        REMOTE_HandleMotorMsg(y, x, z);
+      }
 #endif
       return ERR_OK;
+#endif
+
+#if PL_HAS_MOTOR
+    case RAPP_MSG_TYPE_JOYSTICK_XY: /* values are -128...127 */
+      {
+        int8_t x, y;
+        int16_t x1000, y1000;
+
+        *handled = TRUE;
+        x = *data; /* get x data value */
+        y = *(data+1); /* get y data value */
+        if (REMOTE_isVerbose) {
+          UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"x/y: ");
+          UTIL1_strcatNum8s(buf, sizeof(buf), (int8_t)x);
+          UTIL1_chcat(buf, sizeof(buf), ',');
+          UTIL1_strcatNum8s(buf, sizeof(buf), (int8_t)y);
+          UTIL1_strcat(buf, sizeof(buf), (unsigned char*)"\r\n");
+          SHELL_SendString(buf);
+        }
+  #if 0 /* using shell command */
+        UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"motor L duty ");
+        UTIL1_strcatNum8s(buf, sizeof(buf), scaleSpeedToPercent(x));
+        SHELL_ParseCmd(buf);
+        UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"motor R duty ");
+        UTIL1_strcatNum8s(buf, sizeof(buf), scaleSpeedToPercent(y));
+        SHELL_ParseCmd(buf);
+  #endif
+        /* filter noise around zero */
+        if (x>-5 && x<5) {
+          x = 0;
+        }
+        if (y>-5 && y<5) {
+          y = 0;
+        }
+        x1000 = scaleJoystickTo1K(x);
+        y1000 = scaleJoystickTo1K(y);
+        if (REMOTE_useJoystick) {
+          REMOTE_HandleMotorMsg(y1000, x1000, 0); /* first param is forward/backward speed, second param is direction */
+        }
+      }
+      break;
+#endif
+
     default:
       break;
   } /* switch */
   return ERR_OK;
 }
 
+#if PL_HAS_JOYSTICK
+static void StatusPrintXY(CLS1_ConstStdIOType *io) {
+  uint16_t x, y;
+  int8_t x8, y8;
+  uint8_t buf[64];
+
+  if (APP_GetXY(&x, &y, &x8, &y8)==ERR_OK) {
+    UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"X: 0x");
+    UTIL1_strcatNum16Hex(buf, sizeof(buf), x);
+    UTIL1_strcat(buf, sizeof(buf), (unsigned char*)"(");
+    UTIL1_strcatNum8s(buf, sizeof(buf), x8);
+    UTIL1_strcat(buf, sizeof(buf), (unsigned char*)") Y: 0x");
+    UTIL1_strcatNum16Hex(buf, sizeof(buf), y);
+    UTIL1_strcat(buf, sizeof(buf), (unsigned char*)"(");
+    UTIL1_strcatNum8s(buf, sizeof(buf), y8);
+    UTIL1_strcat(buf, sizeof(buf), (unsigned char*)")\r\n");
+  } else {
+    UTIL1_strcpy(buf, sizeof(buf), (unsigned char*)"GetXY() failed!\r\n");
+  }
+  CLS1_SendStatusStr((unsigned char*)"  analog", buf, io->stdOut);
+}
+#endif
+
 static void REMOTE_PrintHelp(const CLS1_StdIOType *io) {
   CLS1_SendHelpStr((unsigned char*)"remote", (unsigned char*)"Group of remote commands\r\n", io->stdOut);
   CLS1_SendHelpStr((unsigned char*)"  help|status", (unsigned char*)"Shows remote help or status\r\n", io->stdOut);
-  CLS1_SendHelpStr((unsigned char*)"  verbose on|off", (unsigned char*)"Turns the verbose mode on or off\r\n", io->stdOut);
   CLS1_SendHelpStr((unsigned char*)"  on|off", (unsigned char*)"Turns the remote on or off\r\n", io->stdOut);
+  CLS1_SendHelpStr((unsigned char*)"  verbose on|off", (unsigned char*)"Turns the verbose mode on or off\r\n", io->stdOut);
+#if PL_HAS_JOYSTICK
+  CLS1_SendHelpStr((unsigned char*)"  accel on|off", (unsigned char*)"Use accelerometer\r\n", io->stdOut);
+  CLS1_SendHelpStr((unsigned char*)"  joystick on|off", (unsigned char*)"Use joystick\r\n", io->stdOut);
+#endif
 }
 
 static void REMOTE_PrintStatus(const CLS1_StdIOType *io) {
-  CLS1_SendStatusStr((unsigned char*)"Remote", (unsigned char*)"\r\n", io->stdOut);
+  CLS1_SendStatusStr((unsigned char*)"remote", (unsigned char*)"\r\n", io->stdOut);
   CLS1_SendStatusStr((unsigned char*)"  remote", REMOTE_isOn?(unsigned char*)"on\r\n":(unsigned char*)"off\r\n", io->stdOut);
+  CLS1_SendStatusStr((unsigned char*)"  accel", REMOTE_useAccelerometer?(unsigned char*)"on\r\n":(unsigned char*)"off\r\n", io->stdOut);
+  CLS1_SendStatusStr((unsigned char*)"  joystick", REMOTE_useJoystick?(unsigned char*)"on\r\n":(unsigned char*)"off\r\n", io->stdOut);
   CLS1_SendStatusStr((unsigned char*)"  verbose", REMOTE_isVerbose?(unsigned char*)"on\r\n":(unsigned char*)"off\r\n", io->stdOut);
+#if PL_HAS_JOYSTICK
+  StatusPrintXY(io);
+#endif
 }
 
 uint8_t REMOTE_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_StdIOType *io) {
@@ -271,6 +438,18 @@ uint8_t REMOTE_ParseCommand(const unsigned char *cmd, bool *handled, const CLS1_
   } else if (UTIL1_strcmp((char*)cmd, (char*)"remote verbose off")==0) {
     REMOTE_isVerbose = FALSE;
     *handled = TRUE;
+  } else if (UTIL1_strcmp((char*)cmd, (char*)"remote accel on")==0) {
+    REMOTE_useAccelerometer = TRUE;
+    *handled = TRUE;
+  } else if (UTIL1_strcmp((char*)cmd, (char*)"remote accel off")==0) {
+    REMOTE_useAccelerometer = FALSE;
+    *handled = TRUE;
+  } else if (UTIL1_strcmp((char*)cmd, (char*)"remote joystick on")==0) {
+    REMOTE_useJoystick = TRUE;
+    *handled = TRUE;
+  } else if (UTIL1_strcmp((char*)cmd, (char*)"remote joystick off")==0) {
+    REMOTE_useJoystick = FALSE;
+    *handled = TRUE;
   }
   return res;
 }
@@ -291,6 +470,12 @@ void REMOTE_Deinit(void) {
 void REMOTE_Init(void) {
   REMOTE_isOn = TRUE;
   REMOTE_isVerbose = FALSE;
+  REMOTE_useJoystick = TRUE;
+#if PL_IS_ROBO
+  REMOTE_useAccelerometer = TRUE;
+#else
+  REMOTE_useAccelerometer = FALSE;
+#endif
 #if PL_APP_ACCEL_CONTROL_SENDER
   if (FRTOS1_xTaskCreate(RemoteTask, "Remote", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
     for(;;){} /* error */

@@ -90,10 +90,14 @@
   /*!< Set to 1 if using an accelerometer, 0 otherwise */
 #define PL_HAS_ACCEL_STOP     (1 && PL_HAS_ACCEL && PL_HAS_MOTOR && PL_IS_ROBO)
   /*!< Set to 1 if stopping robot with accelerometer, 0 otherwise */
-#define PL_HAS_RADIO          (1)
+#define PL_HAS_RADIO          (0)
   /*!< Set to 1 if using an radio transceiver, 0 otherwise */
-#define PL_HAS_REMOTE         (0)//(1 && PL_HAS_RADIO && PL_HAS_ACCEL)
+#define PL_HAS_REMOTE         (0) //(1 && PL_HAS_RADIO && PL_HAS_ACCEL)
+
 #define PL_APP_ACCEL_CONTROL_SENDER (0) //(PL_HAS_REMOTE && PL_IS_FRDM)
+
+#define PL_HAS_WATCHDOG       (0)
+  /*!< Set to 1 if using a WDT, 0 otherwise */
 #define PL_HAS_RTOS_TRACE     (0) //(1 && PL_HAS_RTOS && configUSE_TRACE_HOOKS)
   /*!< Set to 1 if Percepio trace, 0 otherwise */
 

@@ -63,7 +63,7 @@
 uint8_t buf[16];
 uint16_t cm, us, count, acount;
 bool enemyfound= FALSE;
-bool manualSumo = TRUE;
+bool manualSumo = FALSE;
 TaskHandle_t xHandle = NULL;
 
 static xSemaphoreHandle mutexAppHandle;
@@ -116,24 +116,27 @@ void APP_DebugPrint(unsigned char *str) {
 		    LED1_Neg();
 	#if PL_NOF_KEYS >= 1
 		} else if (EVNT_EventIsSetAutoClear(EVNT_SW1_PRESSED)) {
-		  #if PL_HAS_SHELL
+		#if PL_HAS_SHELL
 			SHELL_SendString("SW1 pressed!\r\n");
-		  #endif
-		  #if PL_HAS_BUZZER
-			BUZ_Beep(300, 500);
-		  #endif
-			//StarteSumoFight
-			manualSumo = FALSE;
-			AutoSumoInit();
-
+		#endif
+		#if PL_IS_ROBO
+			if(manualSumo == FALSE){ //StarteSumoFight
+				FRTOS1_vTaskDelete(xHandle);
+				BUZ_Beep(300, 500);
+				AutoSumoInit();
+			}else{
+				BUZ_Beep(900,50);
+				FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
+				BUZ_Beep(900,50);
+			}
+		#endif
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_LPRESSED)) {
-		  #if PL_HAS_SHELL
-			SHELL_SendString("SW1 long pressed!\r\n");
-		  #endif
-			//Starte Reflectance Kalibration
-			REF_CalibrateStartStop();
-
-
+		#if PL_HAS_SHELL
+			  SHELL_SendString("SW1 long pressed!\r\n");
+		#endif
+		#if PL_IS_ROBO //Starte Reflectance Kalibration
+			  REF_CalibrateStartStop();
+		#endif
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_RELEASED)) {
 		  #if PL_HAS_SHELL
 			SHELL_SendString("SW1 released!\r\n");
@@ -416,7 +419,7 @@ void APP_DebugPrint(unsigned char *str) {
 	  //ACCEL verwendet I2C. I2C verwendet interrupts. Diese sind bei'Normalen'
 	  //Init noch nicht eingeschaltet. Darum hier Initialisieren.
 		#if PL_HAS_ACCEL /* need to initialize accelerometer from a task (interrupts enabled). */
-			ACCEL_LowLevelInit();
+			//ACCEL_LowLevelInit();
 		#endif
 
 		for(;;) {
@@ -442,9 +445,9 @@ void APP_DebugPrint(unsigned char *str) {
 				APP_CheckAccelRobotStop();
 			#endif
 
-			#if PL_HAS_KEYS && PL_NOF_KEYS>0
-				KEY_Scan(); /* scan keys */
-			#endif
+		//	#if PL_HAS_KEYS && PL_NOF_KEYS>0
+			//	KEY_Scan(); /* scan keys */
+			//#endif
 
 			FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
 	  }
@@ -474,173 +477,150 @@ void APP_DebugPrint(unsigned char *str) {
 
 /* SUMO FIGHT IMPLEMENTATION */
 /*-----------------------------------------*/
+#if PL_IS_ROBO
+	static portTASK_FUNCTION(SumoTask, pvParameters) {
+	  (void)pvParameters; /* parameter not used */
 
-static portTASK_FUNCTION(SumoTask, pvParameters) {
-  (void)pvParameters; /* parameter not used */
 
+	  uint16_t dist;
+	  int i=0;
+	  int iter = 0;
+	  bool lastenemy;
 
-  uint16_t dist;
-  int i=0;
-  int iter = 0;
-  bool lastenemy;
+	 for(;;){
 
- for(;;){
+		  switch (sumoState) {
+			   case SUMO_STATE_INIT:
+				 DRV_EnableDisable(TRUE);
 
-	  switch (sumoState) {
-		   case SUMO_STATE_INIT:
-			 DRV_EnableDisable(TRUE);
+				 FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
 
-			 FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
+				 if(enemyfound == TRUE){ //Objekt erkannt
+					 sumoState = SUMO_STATE_HAUNTING;
+				 }else{
+					 sumoState = SUMO_STATE_SEARCHING;
+				 }
+				 break;
 
-			 if(enemyfound == TRUE){ //Objekt erkannt
-				 sumoState = SUMO_STATE_HAUNTING;
-			 }else{
-				 sumoState = SUMO_STATE_SEARCHING;
-			 }
-			 break;
-
-		   case SUMO_STATE_HAUNTING:
-			   lastenemy = TRUE;
-			  while(sumoState == SUMO_STATE_HAUNTING){
-				   if((enemyfound == TRUE)){
-					   for(i=0;i<6;i++) {  	//nicht runterfallen!
-							 if(SensorValue(i) < 500){
-								sumoState = SUMO_STATE_TURNING;
-								break;
-							 } else{
-								DRV_SetSpeed(6500,5500);
-							 }
+			   case SUMO_STATE_HAUNTING:
+				   lastenemy = TRUE;
+				  while(sumoState == SUMO_STATE_HAUNTING){
+					   if((enemyfound == TRUE)){
+						   for(i=0;i<6;i++) {  	//nicht runterfallen!
+								 if(SensorValue(i) < 500){
+									sumoState = SUMO_STATE_TURNING;
+									break;
+								 } else{
+									DRV_SetSpeed(6500,5500);
+								 }
+						   }
+					   }else{
+						   sumoState = SUMO_STATE_SEARCHING;
 					   }
-				   }else{
-					   sumoState = SUMO_STATE_SEARCHING;
-				   }
-				   FRTOS1_vTaskDelay(5/portTICK_RATE_MS);
-			  }
-
-			   break;
-
-		   case SUMO_STATE_TURNING:
-
-				DRV_SetSpeed(-8000,-8000);
-				FRTOS1_vTaskDelay(300/portTICK_RATE_MS);
-				DRV_SetSpeed(0,0);
-
-				sumoState = SUMO_STATE_SEARCHING;
-
-
-			 break;
-
-		   case SUMO_STATE_SEARCHING:
-
-			   DRV_SetSpeed(-2500,2500);
-
-			   if(enemyfound == TRUE) {
-				   BUZ_Beep(900,80);
-
-				   sumoState = SUMO_STATE_HAUNTING;
-			   }else{
-				   for(i=0;i<6;i++) {  	//nicht runterfallen!
-					   if(SensorValue(i) < 500){
-						   DRV_SetSpeed(0,0);
-						   sumoState = SUMO_STATE_TURNING;
-						   break;
-					   }
-				 	}
+					   FRTOS1_vTaskDelay(5/portTICK_RATE_MS);
 				  }
-			 break;
-		}/*switch*/
-	  FRTOS1_vTaskDelay(70/portTICK_RATE_MS);
-  }
-}
 
-static portTASK_FUNCTION(ManualSumoTask, pvParameters) {
-  (void)pvParameters; /* parameter not used */
+				   break;
 
-	  BUZ_Beep(800,80);
-	  FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
-	  BUZ_Beep(800,80);
+			   case SUMO_STATE_TURNING:
 
-	  for(;;){
-		  FRTOS1_vTaskDelay(800/portTICK_RATE_MS);
+					DRV_SetSpeed(-8000,-8000);
+					FRTOS1_vTaskDelay(300/portTICK_RATE_MS);
+					DRV_SetSpeed(0,0);
+
+					sumoState = SUMO_STATE_SEARCHING;
+
+
+				 break;
+
+			   case SUMO_STATE_SEARCHING:
+
+				   DRV_SetSpeed(-2500,2500);
+
+				   if(enemyfound == TRUE) {
+					   BUZ_Beep(900,80);
+
+					   sumoState = SUMO_STATE_HAUNTING;
+				   }else{
+					   for(i=0;i<6;i++) {  	//nicht runterfallen!
+						   if(SensorValue(i) < 500){
+							   DRV_SetSpeed(0,0);
+							   sumoState = SUMO_STATE_TURNING;
+							   break;
+						   }
+						}
+					  }
+				 break;
+			}/*switch*/
+		  FRTOS1_vTaskDelay(70/portTICK_RATE_MS);
 	  }
-}
-
-static portTASK_FUNCTION(USMeasureTask, pvParameters) {
-(void)pvParameters; /* parameter not used */
-	int count[2];
-	int i,p,mean;
-
-#if 1
-	for(;;){
-		us = US_Measure_us();
-		cm = US_usToCentimeters(us, 22);
-
-		if(((cm > 2) && (cm != 0) && (cm <= 50))) {
-			//count[i] = 1;
-			enemyfound = TRUE;
-		}else{
-			//count[i] = 0;
-			enemyfound = FALSE;
-		}
-
-		FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
 	}
-#endif
-}
 
+	static portTASK_FUNCTION(ManualSumoTask, pvParameters) {
+	  (void)pvParameters; /* parameter not used */
 
-static portTASK_FUNCTION(WaitManualTask, pvParameters) {
+		  BUZ_Beep(800,80);
+		  FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
+		  BUZ_Beep(800,80);
+
+		  for(;;){
+			  FRTOS1_vTaskDelay(800/portTICK_RATE_MS);
+		  }
+	}
+
+	static portTASK_FUNCTION(USMeasureTask, pvParameters) {
 	(void)pvParameters; /* parameter not used */
+		int count[2];
+		int i,p,mean;
 
-	int waitcount = 50;
+	#if 1
+		for(;;){
+			us = US_Measure_us();
+			cm = US_usToCentimeters(us, 22);
 
+			if(((cm > 2) && (cm != 0) && (cm <= 50))) {
+				//count[i] = 1;
+				enemyfound = TRUE;
+			}else{
+				//count[i] = 0;
+				enemyfound = FALSE;
+			}
 
-	while((waitcount > 1) && (manualSumo == TRUE)){
-		waitcount = waitcount - 1;
-		FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
+			FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
+		}
+	#endif
 	}
 
-	if(manualSumo = TRUE){
+	static portTASK_FUNCTION(WaitManualTask, pvParameters) {
+		(void)pvParameters; /* parameter not used */
+
+		int waitcount = 50;
+
+		while(waitcount > 1){
+			waitcount = waitcount - 1;
+			FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
+		}
+
+		manualSumo = TRUE;
 		ManualSumoInit();
+
+		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+		FRTOS1_vTaskDelete(xHandle);
+
 	}
-	FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
-	FRTOS1_vTaskDelete(xHandle);
 
-}
+	void ManualSumoInit(void){
+		if (FRTOS1_xTaskCreate(ManualSumoTask,"ManualSumoRob",configMINIMAL_STACK_SIZE,(void*)NULL,tskIDLE_PRIORITY,(xTaskHandle*)NULL) != pdPASS) {
+				 for(;;){} /* error */
+			}
+	}
 
-void ManualSumoInit(void){
-#if 1
-	if (FRTOS1_xTaskCreate(
-			 ManualSumoTask,
-			 "ManualSumoRob",
-			 configMINIMAL_STACK_SIZE,
-			 (void*)NULL,
-			 tskIDLE_PRIORITY,
-			 (xTaskHandle*)NULL
-			 ) != pdPASS) {
+	void AutoSumoInit(void){
+	if (FRTOS1_xTaskCreate(SumoTask,"SumoRob",configMINIMAL_STACK_SIZE,(void*)NULL,tskIDLE_PRIORITY,(xTaskHandle*)NULL) != pdPASS) {
 		 	 for(;;){} /* error */
-		}
-#endif
+	}
 }
-
-void AutoSumoInit(void){
-
-
-#if 1
-	if (FRTOS1_xTaskCreate(
-			 SumoTask,
-			 "SumoRob",
-			 configMINIMAL_STACK_SIZE,
-			 (void*)NULL,
-			 tskIDLE_PRIORITY,
-			 (xTaskHandle*)NULL
-			 ) != pdPASS) {
-		 	 for(;;){} /* error */
-		}
 #endif
-
-}
-
 
 
 void APP_Start(void) {
@@ -650,28 +630,24 @@ void APP_Start(void) {
 	  }
 	#endif
 
-
  	PL_Init(); /* platform initialization */
-
-
 	EVNT_SetEvent(EVNT_INIT); /* set initial event */
-	//EVNT_HandleEvent(APP_EventHandler); /* handle pending events */
 
 	#if PL_HAS_RTOS
-	 	 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
-	 		 for(;;){} /* error */
-	 	 }
+			 if (FRTOS1_xTaskCreate(AppTask, (signed portCHAR *)"App", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL) != pdPASS) {
+				 for(;;){} /* error */
+			 }
 
-	 	 if (FRTOS1_xTaskCreate(USMeasureTask, "USMeasure", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, NULL) != pdPASS) {
-	 		 for(;;){} /* error */
-	 	 }
+		#if PL_IS_ROBO
+			 if (FRTOS1_xTaskCreate(USMeasureTask, "USMeasure", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+2, NULL) != pdPASS) {
+				 for(;;){} /* error */
+			 }
 
-	 	if( FRTOS1_xTaskCreate(WaitManualTask, "WaitManual", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xHandle) != pdPASS) {
-	 		for(;;){} /* error */
-	 	}
-
-	 	 RTOS_Run();
-
+			if( FRTOS1_xTaskCreate(WaitManualTask, "WaitManual", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xHandle) != pdPASS) {
+				for(;;){} /* error */
+			}
+		#endif
+		RTOS_Run();
 	#else
 	 	 APP_Loop();
 	#endif

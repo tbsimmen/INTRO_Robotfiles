@@ -463,6 +463,9 @@ static portTASK_FUNCTION(ReflTask, pvParameters) {
   (void)pvParameters; /* not used */
   for(;;) {
     REF_StateMachine();
+#if PL_HAS_WATCHDOG
+    WDT_IncTaskCntr(WDT_TASK_ID_REFLECTANCE, 10+1); /* count in measurement time */
+#endif
     FRTOS1_vTaskDelay(10/portTICK_RATE_MS);
   }
 }
