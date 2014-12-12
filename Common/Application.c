@@ -59,6 +59,10 @@
 #if PL_HAS_REFLECTANCE
   #include "Reflectance.h"
 #endif
+#if PL_HAS_REMOTE
+  //#include "RStdIO.c"
+#endif
+
 
 uint8_t buf[16];
 uint16_t cm, us, count, acount;
@@ -71,8 +75,12 @@ static xSemaphoreHandle mutexAppHandle;
 typedef enum {
   SUMO_STATE_INIT,
   SUMO_STATE_HAUNTING,
-  SUMO_STATE_TURNING,
-  SUMO_STATE_SEARCHING,
+  SUMO_STATE_TURNINGLEFT,
+  SUMO_STATE_TURNINGRIGHT,
+  SUMO_STATE_TURNINGLEFTFAST,
+  SUMO_STATE_TURNINGRIGHTFAST,
+  SUMO_STATE_SEARCHLEFT,
+  SUMO_STATE_SEARCHRIGHT
 } SUMOStateType;
 
 static volatile SUMOStateType sumoState = SUMO_STATE_INIT; /* state machine state */
@@ -373,7 +381,7 @@ void APP_DebugPrint(unsigned char *str) {
 	static void APP_CheckAccelRobotStop(void) {
 
 		//if((((MMA1_GetYmg() > 300) || (MMA1_GetYmg() < -300)|| (MMA1_GetXmg() > 300) || (MMA1_GetXmg() < -300)) && (MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0)) {
-		if(((MMA1_GetZmg() < 700)) || (MMA1_GetZmg() < 0)) {
+		if(((MMA1_GetZmg() < 800)) || (MMA1_GetZmg() < 0)) {
 
 			if(acount >= 2){
 				acount = 0;
@@ -423,7 +431,7 @@ void APP_DebugPrint(unsigned char *str) {
 	  //ACCEL verwendet I2C. I2C verwendet interrupts. Diese sind bei'Normalen'
 	  //Init noch nicht eingeschaltet. Darum hier Initialisieren.
 		#if PL_HAS_ACCEL /* need to initialize accelerometer from a task (interrupts enabled). */
-			//ACCEL_LowLevelInit();
+			ACCEL_LowLevelInit();
 		#endif
 
 		for(;;) {
@@ -485,76 +493,134 @@ void APP_DebugPrint(unsigned char *str) {
 	static portTASK_FUNCTION(SumoTask, pvParameters) {
 	  (void)pvParameters; /* parameter not used */
 
-
 	  uint16_t dist;
 	  int i=0;
 	  int iter = 0;
 	  bool lastenemy;
+	  int tolinit = 110;
+	  int tol = tolinit;
 
 	 for(;;){
-
 		  switch (sumoState) {
 			   case SUMO_STATE_INIT:
 				 DRV_EnableDisable(TRUE);
 
 				 FRTOS1_vTaskDelay(5000/portTICK_RATE_MS);
-
-				 if(enemyfound == TRUE){ //Objekt erkannt
-					 sumoState = SUMO_STATE_HAUNTING;
-				 }else{
-					 sumoState = SUMO_STATE_SEARCHING;
-				 }
+				 sumoState = SUMO_STATE_HAUNTING;
 				 break;
 
 			   case SUMO_STATE_HAUNTING:
 				   lastenemy = TRUE;
+
 				  while(sumoState == SUMO_STATE_HAUNTING){
-					   if((enemyfound == TRUE)){
+
+					   if((enemyfound == TRUE) || (tol > 0)){
+						   if (enemyfound == FALSE){
+							   tol = tol - 1;
+						   }else{
+							   tol = tolinit;
+						   }
+
 						   for(i=0;i<6;i++) {  	//nicht runterfallen!
-								 if(SensorValue(i) < 500){
-									sumoState = SUMO_STATE_TURNING;
+								 if(SensorValue(i) < 900){ //500
+									 if(i < 3){ //linke Seite berührt
+										 sumoState = SUMO_STATE_TURNINGLEFTFAST;
+										 tol = tolinit;
+									 }else{ 	//rechte Seite berührt
+										 tol = tolinit;
+										 sumoState = SUMO_STATE_TURNINGRIGHTFAST;
+									 }
 									break;
 								 } else{
-									DRV_SetSpeed(6500,5500);
+									DRV_SetSpeed(8000,8000);
 								 }
 						   }
 					   }else{
-						   sumoState = SUMO_STATE_SEARCHING;
+						   tol = tolinit;
+						   sumoState = SUMO_STATE_SEARCHLEFT;
 					   }
 					   FRTOS1_vTaskDelay(5/portTICK_RATE_MS);
 				  }
-
 				   break;
 
-			   case SUMO_STATE_TURNING:
-
-					DRV_SetSpeed(-8000,-8000);
-					FRTOS1_vTaskDelay(300/portTICK_RATE_MS);
+			   case SUMO_STATE_TURNINGLEFTFAST:
+					DRV_SetSpeed(-13000,-13000);
+					FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
+					DRV_SetSpeed(-6000,-6000);
+					FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+					DRV_SetSpeed(8000,-4000);
+					FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
 					DRV_SetSpeed(0,0);
+					sumoState = SUMO_STATE_SEARCHLEFT;
+					break;
 
-					sumoState = SUMO_STATE_SEARCHING;
-
-
+			   case SUMO_STATE_TURNINGRIGHTFAST:
+					DRV_SetSpeed(-13000,-13000);
+					FRTOS1_vTaskDelay(200/portTICK_RATE_MS);
+					DRV_SetSpeed(-6000,-6000);
+					FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+					DRV_SetSpeed(-4000,8000);
+					FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
+					DRV_SetSpeed(0,0);
+					sumoState = SUMO_STATE_SEARCHRIGHT;
 				 break;
 
-			   case SUMO_STATE_SEARCHING:
+			   case SUMO_STATE_TURNINGLEFT:
+				    DRV_SetSpeed(-4000,-4000);
+				   	FRTOS1_vTaskDelay(150/portTICK_RATE_MS);
+					DRV_SetSpeed(8000,-4000);
+					FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
+					DRV_SetSpeed(0,0);
+					sumoState = SUMO_STATE_SEARCHLEFT;
+					break;
 
-				   DRV_SetSpeed(-2500,2500);
+			   case SUMO_STATE_TURNINGRIGHT:
+				    DRV_SetSpeed(-4000,-4000);
+				    FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
+					DRV_SetSpeed(-4000,8000);
+					FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
+					DRV_SetSpeed(0,0);
+					sumoState = SUMO_STATE_SEARCHRIGHT;
+				 break;
 
+			   case SUMO_STATE_SEARCHLEFT:
+				   DRV_SetSpeed(2800,-2800);
 				   if(enemyfound == TRUE) {
 					   BUZ_Beep(900,80);
-
 					   sumoState = SUMO_STATE_HAUNTING;
 				   }else{
 					   for(i=0;i<6;i++) {  	//nicht runterfallen!
 						   if(SensorValue(i) < 500){
 							   DRV_SetSpeed(0,0);
-							   sumoState = SUMO_STATE_TURNING;
+							   if(i < 3){ //rechte Seite berührt
+								   sumoState = SUMO_STATE_TURNINGLEFT;
+							   }else{
+								   sumoState = SUMO_STATE_TURNINGRIGHT;
+							   }
 							   break;
 						   }
 						}
 					  }
 				 break;
+			   case SUMO_STATE_SEARCHRIGHT:
+			   				   DRV_SetSpeed(-2800,2800);
+			   				   if(enemyfound == TRUE) {
+			   					   BUZ_Beep(900,80);
+			   					   sumoState = SUMO_STATE_HAUNTING;
+			   				   }else{
+			   					   for(i=0;i<6;i++) {  	//nicht runterfallen!
+			   						   if(SensorValue(i) < 500){
+			   							   DRV_SetSpeed(0,0);
+			   							   if(i < 3){ //rechte Seite berührt
+			   								   sumoState = SUMO_STATE_TURNINGLEFT;
+			   							   }else{
+			   								   sumoState = SUMO_STATE_TURNINGRIGHT;
+			   							   }
+			   							   break;
+			   						   }
+			   						}
+			   					  }
+			   				 break;
 			}/*switch*/
 		  FRTOS1_vTaskDelay(70/portTICK_RATE_MS);
 	  }
@@ -583,14 +649,11 @@ void APP_DebugPrint(unsigned char *str) {
 			cm = US_usToCentimeters(us, 22);
 
 			if(((cm > 2) && (cm != 0) && (cm <= 50))) {
-				//count[i] = 1;
 				enemyfound = TRUE;
 			}else{
-				//count[i] = 0;
 				enemyfound = FALSE;
 			}
-
-			FRTOS1_vTaskDelay(51/portTICK_RATE_MS);
+			FRTOS1_vTaskDelay(81/portTICK_RATE_MS);
 		}
 	#endif
 	}
@@ -610,7 +673,6 @@ void APP_DebugPrint(unsigned char *str) {
 
 		FRTOS1_vTaskDelay(100/portTICK_RATE_MS);
 		FRTOS1_vTaskDelete(xHandle);
-
 	}
 
 	void ManualSumoInit(void){
@@ -653,9 +715,6 @@ void APP_Start(void) {
 				for(;;){} /* error */
 			}
 		#endif
-
-
-
 		RTOS_Run();
 	#else
 	 	 APP_Loop();
