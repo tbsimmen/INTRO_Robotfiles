@@ -26,6 +26,7 @@ static uint8_t APP_GetXY(uint16_t *x, uint16_t *y, int8_t *x8, int8_t *y8);
  */
 bool REMOTE_GetOnOff(void);
 
+
 /*!
  * \brief Function to turn on or off the remote controller.
  * \param[in] on TRUE for turning it on, FALSE otherwise.

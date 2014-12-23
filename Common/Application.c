@@ -12,6 +12,7 @@
 #include "Platform.h"
 #include "Application.h"
 #include "WAIT1.h"
+#include "PE_Types.h"
 
 #if PL_HAS_LED
   #include "LED.h"
@@ -54,14 +55,14 @@
 #include "Ultrasonic.h"
 #endif
 #if PL_HAS_REMOTE
+  #include "Radio.h"
   #include "Remote.h"
+  #include "RNet_App.h"
 #endif
 #if PL_HAS_REFLECTANCE
   #include "Reflectance.h"
 #endif
-#if PL_HAS_REMOTE
-  //#include "RStdIO.c"
-#endif
+
 
 
 uint8_t buf[16];
@@ -243,9 +244,9 @@ void APP_DebugPrint(unsigned char *str) {
 		  #if PL_HAS_BUZZER
 			BUZ_Beep(300, 500);
 		  #endif
-			#if PL_IS_FRDM
-				(void)RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN,"buzzer buz 800 400\r\n",	sizeof("buzzer buz 800 400\r\n")-1);
-			#endif
+			//#if PL_IS_FRDM
+			//	(void)RSTDIO_SendToTxStdio(RSTDIO_QUEUE_TX_IN,"buzzer buz 800 400\r\n",	sizeof("buzzer buz 800 400\r\n")-1);
+			//#endif
 
 		  } else if (EVNT_EventIsSetAutoClear(EVNT_SW7_LPRESSED)) {
 		  #if PL_HAS_SHELL
@@ -629,14 +630,36 @@ void APP_DebugPrint(unsigned char *str) {
 	static portTASK_FUNCTION(ManualSumoTask, pvParameters) {
 	  (void)pvParameters; /* parameter not used */
 
+	  	  bool RemOn;
+
 		  BUZ_Beep(800,80);
 		  FRTOS1_vTaskDelay(160/portTICK_RATE_MS);
 		  BUZ_Beep(800,80);
 
+			//#if PL_HAS_RADIO
+			//  RNETA_Init();
+			//#endif
+
+			//#if PL_HAS_REMOTE
+			//  REMOTE_Init();
+			//#endif
+
+
+
 		  for(;;){
-			  FRTOS1_vTaskDelay(800/portTICK_RATE_MS);
+
+			 RemOn =  REMOTE_GetOnOff();
+
+			  if(RemOn){
+
+			  }else{
+				  DRV_SetSpeed(0,0);
+			  }
+			    FRTOS1_vTaskDelay(800/portTICK_RATE_MS);
 		  }
+
 	}
+
 
 	static portTASK_FUNCTION(USMeasureTask, pvParameters) {
 	(void)pvParameters; /* parameter not used */

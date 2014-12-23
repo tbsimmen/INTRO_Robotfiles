@@ -27,4 +27,6 @@ void RNETA_Deinit(void);
 /*! \brief Driver initialization */
 void RNETA_Init(void);
 
+
+
 #endif /* RNETAPP_H_ */
